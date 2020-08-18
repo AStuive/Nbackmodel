@@ -1,0 +1,300 @@
+(set-task "actr.tasks.driving.Driving")
+
+(sgp
+    :iu 10
+    :bll 0.5
+    :digit-detect-delay .050
+    :digit-recode-delay .250
+    :visual-onset-span 0.3
+    :visual-finst-span 3.0
+    :emma t
+    :v t
+    ;---
+    :rt -100
+    :ans 0.125
+    ;:mp 24
+    ;:lf 0
+    ;---
+    :trout t
+    ;:act t
+    ;:brain-imaging nil
+    ;:bout t
+)
+
+(add-dm
+    (goal1 isa drive)
+    (goal2 isa nback status start)
+)
+(set-all-base-levels 10000)
+
+;----------------- DRIVING -----------------
+
+(p drive*attend-near
+    =goal>
+        isa drive
+        na nil
+    ?visual-location> 
+        ;state free
+        buffer empty
+        - buffer requested
+        
+    ?visual>
+        state free
+        buffer empty
+==>
+    +visual-location>
+        isa visual-location
+        kind near
+)
+
+(p drive*process-near-attend-far
+    =goal>
+        isa drive
+        na nil
+    =visual-location>
+        isa visual-location
+        kind near
+        screen-x =nx
+        screen-y =ny
+        distance =nd
+    ?visual>
+        state free
+        buffer empty
+==>
+    !bind! =na (image->angle =nx =nd)
+    =goal>
+        na =na
+    +visual-location>
+        isa visual-location
+        kind car
+)
+
+(p drive*process-car
+    =goal>
+        isa drive
+        na =na
+        fa nil
+        na2    =na2
+        fa2    =fa2
+        fkind2 =fkind
+        ;fthw2  =fthw2
+        time2  =time2
+    =visual-location>
+        isa visual-location
+        kind car 
+        kind =fkind
+        screen-x =fx
+        distance =fd
+    ?visual>
+        state free
+        buffer empty
+    =imaginal>
+        nbackspeed =nbackspeed
+==>
+    !bind! =fa (image->angle =fx =fd)
+    !bind! =time (mp-time)
+    !bind! =dna (- =na =na2)
+    !bind! =dfa (- =fa =fa2)
+    !bind! =dt (- =time =time2)
+    !bind! =vna (my/ =dna =dt)
+    !bind! =vfa (my/ =dfa =dt)
+        ;!bind! =v (get-velocity)
+        ;!bind! =fthw (get-thw =fd =v)
+        ;!bind! =dthw (- =fthw =fthw2)
+    !eval! (do-steer =na =dna =dfa =dt)
+    !eval! (keep-limit =nbackspeed =dt)
+    =goal>
+        fkind =fkind
+        fa =fa
+        fd =fd
+        vna =vna
+        vfa =vfa
+        time =time
+        ;fthw =fthw
+        ;v =v
+        done t
+    =imaginal>
+    +visual>
+        isa move-attention
+        screen-pos =visual-location
+)
+
+(p drive*process-without-old
+    =goal>
+        isa drive
+        na =na
+        fa nil
+    =visual-location>
+        isa visual-location
+        kind =fkind
+        screen-x =fx
+        distance =fd
+    ?visual>
+        state free
+        buffer empty
+==>
+    !bind! =fa (image->angle =fx =fd)
+    !bind! =v (get-velocity)
+        ;!bind! =fthw (get-thw =fd =v)
+    !bind! =time (mp-time)
+    =goal>
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        ;fthw2 =fthw
+        time2 =time
+    +visual-location>
+        isa visual-location
+        kind near
+)
+(spp drive*process-without-old :u 7)
+
+(p drive*loop-stable
+    =goal>
+        isa drive
+        na =na
+        fa =fa
+        vna =vna
+        vfa =vfa
+        fd =fd
+        fkind =fkind
+        ;fthw =fthw
+        time =time
+    =visual>
+        isa car
+    !eval! (is-car-stable =na =vna =vfa)
+==>
+    =goal>
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        ;fthw2 =fthw
+        time2 =time
+    +visual-location>
+        isa visual-location
+        kind speedsign
+        :attended new
+)
+
+(p drive*loop-not-stable
+    =goal>
+        isa drive
+        na =na
+        fa =fa
+        vna =vna
+        vfa =vfa
+        fd =fd
+        fkind =fkind
+        ;fthw =fthw
+        time =time
+    =visual>
+        isa car
+    !eval! (is-car-not-stable =na =vna =vfa)
+==>
+    =goal>
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        ;fthw2 =fthw
+        time2 =time
+    +visual-location>
+        isa visual-location
+        kind speedsign
+        :attended new
+)
+
+(p drive*reset
+    =goal>
+        isa drive
+    ?visual-location>
+        state free
+        - buffer requested
+        ;- kind speedsign
+    ?visual>
+        state free
+        buffer empty
+==>
+    =goal>
+        na nil
+        fa nil
+        na2 nil
+        fa2 nil
+        fkind2 nil
+        ;fthw2 nil
+        time2 nil
+    +visual-location>
+        isa visual-location
+        kind near
+)
+(spp :u 1)
+
+;----------------- NBACK general-----------------
+
+(p nback-start
+        ;create an empty imaginal chunk
+    =goal>
+        isa nback
+        status start
+    ?imaginal>
+        state free
+==>
+    =goal>
+        status notice
+    +imaginal>
+        isa nback-state
+        nbackspeed 60 ;starting speed
+)
+
+(p notice-sign
+    =goal>
+        isa nback
+        status notice
+    =visual-location>
+        isa visual-location
+        :attended nil
+        kind speedsign
+    ?visual>
+        state free
+==>
+    =goal>
+        isa nback
+        status read-nback
+    +visual>
+        isa move-attention
+        screen-pos =visual-location
+)
+
+(spp :u 10)
+
+;----------------- NBACK -----------------
+
+(p follow-0back
+    =goal>
+        isa nback
+        status read-nback
+    =visual>
+        isa speedsign
+        value =tlimit
+    =imaginal>
+        isa nback-state
+    ?retrieval>
+        buffer empty
+==>
+    =imaginal>
+        nbackspeed =tlimit
+    =goal>
+        isa nback
+        status notice
+)
+
+(goal-focus goal1)
+(goal-focus goal2)
