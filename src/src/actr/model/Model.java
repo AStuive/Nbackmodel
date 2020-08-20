@@ -44,6 +44,7 @@ public class Model
 
 	//output = new Vector<Sample> (); //mlh
 	List<String> output = new ArrayList<String>();	
+	public static String outputPath = ""; 
 
 	private Model (Frame frame)
 	{
@@ -677,7 +678,7 @@ public class Model
 		nbackLevel = nbackLevel.replace(".actr", "");
 		try {
 			FileWriter writer = new FileWriter(
-					"C:\\Users\\morit\\Desktop\\data\\" + nbackLevel + filename + System.currentTimeMillis() +".txt");
+					outputPath + nbackLevel + filename + System.currentTimeMillis() +".txt");
 			for (String str:output) {
 				writer.write(str);
 			}

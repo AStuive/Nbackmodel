@@ -5,6 +5,8 @@ import java.io.File;
 import java.util.Vector;
 import javax.swing.*;
 
+import actr.model.Model;
+
 /**
  * The core class for managing the entire application. This class keeps track of all open frames
  * as well as application-wide preferences.
@@ -106,7 +108,9 @@ public class Core
 		if (fileDialog.getFile() == null) return;
 		String filename = fileDialog.getDirectory() + fileDialog.getFile();
 		openFrame (new File (filename));
-		currentFile = fileDialog.getFile(); //mlh
+		currentFile = fileDialog.getFile(); //mlh,
+		File file = new File(filename); //mlh
+		Model.outputPath = file.getParent() + "\\data\\"; //mlh
 	}
 
 	/**
