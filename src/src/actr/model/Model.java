@@ -6,7 +6,7 @@ import java.io.*;
 import actr.env.*;
 //import actr.model.Bold.Activity;
 import actr.task.Task;
-import actr.tasks.driving.Sample;
+//import actr.tasks.driving.Sample;
 
 /**
  * The highest-level class representing an ACT-R model.

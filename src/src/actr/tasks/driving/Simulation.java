@@ -27,14 +27,12 @@ public class Simulation
 		driver = new Driver (model, "Driver", 25, 1.0f, 1.0f);
 		scenario = new Scenario();
 		env = new Env (driver, scenario);
-		// XXX samples.add (recordSample (env));
 		samples.add (recordSample (env));
 	}
 
 	synchronized void update ()
 	{
 		env.update ();
-		// XXX samples.add (recordSample (env));
 		samples.add (recordSample (env));
 	}
 
@@ -105,8 +103,8 @@ public class Simulation
 
 	double headingError (Sample s)
 	{
-		Road.Segment s2 = env.road.getSegment ((int) s.simcarRoadIndex);
-		Road.Segment s1 = env.road.getSegment ((int) s.simcarRoadIndex - 1);
+		Road.Segment s2 = Road.getSegment ((int) s.simcarRoadIndex);
+		Road.Segment s1 = Road.getSegment ((int) s.simcarRoadIndex - 1);
 		Position rh = s2.middle.subtract (s1.middle);
 		rh.normalize();
 		return Math.abs (rotAngle (rh.x, rh.z) - rotAngle (s.simcarHeading.x, s.simcarHeading.z));
@@ -121,12 +119,12 @@ public class Simulation
 	Results analyze ()
 
 	{
-		double startTime = 0;
+		//double startTime = 0;
 		double stopTime = 1000; //def -1000
 
-		int numTasks = 0;
+		//int numTasks = 0;
 		int numTaskSamples = 0;
-		double sumTime = 0;
+		//double sumTime = 0;
 		double sumLatDev = 0;
 		double sumLatVel = 0;
 		double sumSpeedDev = 0;
@@ -187,15 +185,15 @@ public class Simulation
 			}
 			if ((s.event == 1) && (sprev.event == 0))
 			{
-				startTime = s.time;
+				//startTime = s.time;
 				lvDetected = false;
 				brakeEvent = false;
 			}
 			else if ((s.event == 0) && (sprev.event == 1))
 			{
-				numTasks ++;
+				//numTasks ++;
 				stopTime = s.time;
-				sumTime += (stopTime - startTime);
+				//sumTime += (stopTime - startTime);
 			}
 		}
 

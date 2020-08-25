@@ -69,11 +69,11 @@ public class Autocar extends Vehicle
 
 	void draw (Graphics g, Env env)
 	{
-		Position pos1 = env.road.location (fracIndex, 2.2);
+		Position pos1 = Road.location (fracIndex, 2.2);
 		pos1.y = 0.0;
 		Coordinate im1 = env.world2image (pos1);
 
-		Position pos2 = env.road.location (fracIndex, 2.8);
+		Position pos2 = Road.location (fracIndex, 2.8);
 		pos2.y = 1.0;
 		Coordinate im2 = env.world2image (pos2);
 
