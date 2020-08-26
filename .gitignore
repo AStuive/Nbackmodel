@@ -1,5 +1,4 @@
 **rehearsal/data/*.txt
 .vscode/settings.json
 .vscode/launch.json
-bin/
-.svn/
+
