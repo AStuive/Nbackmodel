@@ -1,6 +1,8 @@
 package actr.model;
 
 import java.util.*;
+import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * Prediction of BOLD response that arises from buffer activity.

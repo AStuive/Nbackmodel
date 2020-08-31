@@ -257,9 +257,19 @@ public class Simcar extends Vehicle
 		Font myFont = new Font("Helvetica", Font.BOLD, 18);
 		g.setFont(myFont);
 		g.setColor(Color.WHITE);
-		g.drawString(speed, 260, 300);
+		g.drawString(speed, 150, 315);
 		
+		/* testing instructions
+		// get which nback int num; String instr = num + " back task"; 
+		String instr = "2back task"; 
+		g.setFont(myFont);
+		g.setColor(Color.WHITE);
+		g.drawString(instr, 280, 20); */
 	}
+	
+
+
+
 
 	double devscale = .0015;
 	double devx = -.7;

@@ -58,7 +58,7 @@ public class Env
 		g.setColor (new Color (146, 220, 255));
 		g.fillRect (0, 0, envWidth, envHeight);
 
-		Coordinate vp = world2image (Road.location (simcar.fracIndex + 1000, 2.5));
+		Coordinate vp = world2image (road.location (simcar.fracIndex + 1000, 2.5));
 		g.setColor (new Color (0, 125, 15));
 		g.fillRect (0, vp.y, envWidth, envHeight);
 

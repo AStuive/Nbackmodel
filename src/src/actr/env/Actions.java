@@ -6,6 +6,7 @@ import java.io.*;
 import java.net.URL;
 import javax.swing.*;
 import javax.swing.text.*;
+
 import resources.Resources;
 
 class Actions
@@ -188,7 +189,7 @@ class Actions
 		copyAction.setEnabled (frame.getEditor()!=null
 				//&& frame.getEditor().hasFocus()
 				&& frame.getEditor().getSelectedText()!=null);
-
+		
 		pasteAction.setEnabled (frame.getEditor()!=null
 				// && frame.getEditor().hasFocus()
 				&& (Main.inApplet()
@@ -217,7 +218,7 @@ class Actions
 		if (changed) title = "*"+title;
 		frame.setTitle (title);
 	}
-
+	
 	Action createAppletFileAction (final String name)
 	{
 		return new AbstractAction (name) {

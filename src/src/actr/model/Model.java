@@ -6,7 +6,7 @@ import java.io.*;
 import actr.env.*;
 //import actr.model.Bold.Activity;
 import actr.task.Task;
-//import actr.tasks.driving.Sample;
+import actr.tasks.driving.Sample;
 
 /**
  * The highest-level class representing an ACT-R model.
@@ -44,7 +44,6 @@ public class Model
 
 	//output = new Vector<Sample> (); //mlh
 	List<String> output = new ArrayList<String>();	
-	public static String outputPath = ""; 
 
 	private Model (Frame frame)
 	{
@@ -671,14 +670,14 @@ public class Model
 		return s;
 	}
 
-	//mlh
+	//make directory universal
 	public static void print(List<String> output, String filename)
 	{
 		String nbackLevel = Main.core.getFilename();
 		nbackLevel = nbackLevel.replace(".actr", "");
 		try {
 			FileWriter writer = new FileWriter(
-					outputPath + nbackLevel + filename + System.currentTimeMillis() +".txt");
+					"C:\\Users\\Andy\\Desktop\\moritz actr\\Output\\" + nbackLevel + filename + System.currentTimeMillis() +".txt");
 			for (String str:output) {
 				writer.write(str);
 			}
