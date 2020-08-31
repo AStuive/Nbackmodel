@@ -23,7 +23,7 @@
 
 (add-dm
     (goal1 isa drive)
-    (goal2 isa nback status start)
+    (goal2 isa nback status start ntask blank)
 )
 (set-all-base-levels 10000)
 
@@ -248,7 +248,7 @@
         state free
 ==>
     =goal>
-        status notice
+        status noticeIn
         num 0
         nr 0
         rehearsal f
@@ -256,6 +256,26 @@
         isa nback-state
         nbackspeed 60
         1back 0
+)
+
+; WIP, not getting the nback from screen
+(p notice-instructions
+    =goal>
+        isa nback
+        status noticeIn
+        ntask blank
+        ;=visual-location>
+        ;   isa visual-location
+        ;   :attended nil
+        ;   kind instructions
+        ; ?visual>
+        ;  state free
+==>
+    !bind! =numb (get-nback)
+    =goal>
+        isa nback
+        status notice
+        ntask =numb
 )
 
 (p notice-sign
@@ -278,6 +298,8 @@
         screen-pos =visual-location
 )
 
+
+
 (spp :u 10)
 
 ;----------------- NBACK -----------------
@@ -291,7 +313,7 @@
     =goal>
         isa nback
         status read-nback
-        < num 4
+        < num 4 ;comparing to ntask or numb doesn't work
     =visual>
         isa speedsign
         value =tlimit
@@ -351,6 +373,7 @@
     =goal>
         isa nback
         status remember1
+        > ntask 0
     =retrieval>
         isa nback-state
         1back =1back
