@@ -1,9 +1,9 @@
 package actr.tasks.driving;
 
 import java.awt.BorderLayout;
-// import java.io.BufferedWriter;
-// import java.io.FileWriter;
-// import java.io.IOException;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -58,7 +58,7 @@ public class Driving extends actr.task.Task
 	static int speedI = 0;
 	static Coordinate signPos;
 	static String currentNBack = "";
-	String[] nBack_list = {"2back", "3back", "0back", "1back", "4back", "0back", "3back", "4back", "1back", "2back"};
+	String[] nBack_list = {"3back", "3back", "0back", "1back", "4back", "0back", "3back", "4back", "1back", "2back"};
 	double sign_count = 0;
 	int rehearsal_count = 0;
 	static String imaginedSpeedlimit = "";
@@ -119,7 +119,7 @@ public class Driving extends actr.task.Task
 
 		getModel().getVision().addVisual ("near", "near", "near", nearLabel.getX(), nearLabel.getY(), 1, 1, 10);
 		getModel().getVision().addVisual ("car", "car", "car", carLabel.getX(), carLabel.getY(), 1, 1, 100);
-		getModel().getVision().addVisual ("speedometer", "speedometer", "speedometer", 260, 300, 1, 1, 1);
+		getModel().getVision().addVisual ("speedometer", "speedometer", "speedometer", 150, 315, 1, 1, 1);
 		addPeriodicUpdate (Env.sampleTime);
 
 	}
@@ -132,8 +132,8 @@ public class Driving extends actr.task.Task
 			updateVisuals();
 			if(simulation.env.time>10) //only start after 10s
 				updateSign(simulation.env.time);
-			//updateInstructions(simulation.env.time);
-			simulation.update();
+			updateInstructions(simulation.env.time);			// $$$$$$$$$$$$$$$$$$$$$$
+			simulation.update();	
 			updateSpeedometer();
 		}
 		else 
@@ -171,9 +171,12 @@ public class Driving extends actr.task.Task
 		}
 
 		//add instructions
-		if((int)time%180 == 0 && instructionsSeen == false)
+		// 180
+		if((int)time%20 == 0 && instructionsSeen == false)
 		{
+			//System.out.println("instructions\n"); 
 			currentNBack = nBack_list[nback_count];
+			//System.out.println(currentNBack +"\n"); 
 			getModel().getVision().addVisual("instructions", "instructions", currentNBack, 200, 100, 50, 50);
 			instructions.setLocation(200, 100);
 			instructionsOnset = time;
@@ -181,6 +184,8 @@ public class Driving extends actr.task.Task
 			nback_count += 1;
 		}else if(time - instructionsOnset >= 2)
 		{
+			//System.out.println("no instructions\n");
+			//System.out.println(currentNBack +"\n"); // still an nback value
 			getModel().getVision().removeVisual("instructions");
 			instructionsSeen = false;
 		}
@@ -190,8 +195,9 @@ public class Driving extends actr.task.Task
 	{
 		String[] speedlimits = {"60", "70", "80", "90", "100", "110", "120", "130", "140"};		
 		Env env = simulation.env;
-
-		if((int)time%20 == 0 && signSeen == false && (speedI < speedlimits.length) )
+		
+		// time%20 before!			
+		if((int)time%10 == 0 && signSeen == false && (speedI < speedlimits.length) )
 		{
 			if (env.simcar.nearPoint != null)
 
@@ -436,7 +442,7 @@ public class Driving extends actr.task.Task
 			}
 			else if (cmd.equals ("get-num-rehearsal"))
 			{
-				//number of rehearals per iteration
+				//number of rehearsals per iteration
 				rehearsal_count += 1;
 				return rehearsal_count;
 			}
@@ -445,7 +451,39 @@ public class Driving extends actr.task.Task
 				//number of rehearsals in a loop
 				rehearsal_count = 0;
 				return rehearsal_count;
+			} 
+			// ADDED				
+			else if (cmd.equals("get-nback")) 
+			{
+				if (!currentNBack.isEmpty())
+				{
+					char nbackn = currentNBack.charAt(0); 
+					//System.out.println("nback: " + nbackn + "\n");
+					return (double)(nbackn - 48);
+				}
+				else 
+				{ 
+					System.out.println("no currentNBack\n");
+					return 5;
+				} 
 			}
+			// ADDED
+			else if (cmd.equals("get-signsneeded"))
+			{
+				if (!currentNBack.isEmpty())
+				{
+					char nbackn = currentNBack.charAt(0);
+					double need = nbackn - 47; // -48 to get number from char, +1 for number of signs
+					//System.out.println("signsNeeded: " + need + "\n");
+					return need;		
+				}
+				else 
+				{ 
+					System.out.println("no currentNBack2\n");
+					return 5;
+				} 
+			}
+			
 			else return 0;
 		}
 		catch (Exception e)
