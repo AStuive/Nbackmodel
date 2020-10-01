@@ -1,6 +1,7 @@
 package actr.tasks.driving;
 
 import java.awt.BorderLayout;
+import java.util.Arrays;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -58,7 +59,7 @@ public class Driving extends actr.task.Task
 	static int speedI = 0;
 	static Coordinate signPos;
 	static String currentNBack = "";
-	String[] nBack_list = {"3back", "3back", "0back", "1back", "4back", "0back", "3back", "4back", "1back", "2back"};
+	String[] nBack_list = {"2back", "3back", "0back", "1back", "4back", "0back", "3back", "4back", "1back", "2back"};
 	double sign_count = 0;
 	int rehearsal_count = 0;
 	static String imaginedSpeedlimit = "";
@@ -165,14 +166,15 @@ public class Driving extends actr.task.Task
 		if (nback_count == 0 && Math.round(Math.random()) == 1)
 		{
 			//keep the old order
-		}else if(nback_count == 0)
+		} else if(nback_count == 0)
 		{
+			//NBACKLIST ARRAY #2
 			nBack_list = new String[] {"2back", "1back", "4back", "3back", "0back", "4back", "1back", "0back", "3back", "2back"};
 		}
 
 		//add instructions
 		// 180
-		if((int)time%20 == 0 && instructionsSeen == false)
+		if((int)time%180 == 0 && instructionsSeen == false)
 		{
 			//System.out.println("instructions\n"); 
 			currentNBack = nBack_list[nback_count];
@@ -182,7 +184,7 @@ public class Driving extends actr.task.Task
 			instructionsOnset = time;
 			instructionsSeen = true;
 			nback_count += 1;
-		}else if(time - instructionsOnset >= 2)
+		} else if(time - instructionsOnset >= 2)
 		{
 			//System.out.println("no instructions\n");
 			//System.out.println(currentNBack +"\n"); // still an nback value
@@ -458,8 +460,10 @@ public class Driving extends actr.task.Task
 				if (!currentNBack.isEmpty())
 				{
 					char nbackn = currentNBack.charAt(0); 
-					//System.out.println("nback: " + nbackn + "\n");
+					System.out.println("nback: " + nbackn + "\n");
+					//System.out.println(Arrays.toString(nBack_list));
 					return (double)(nbackn - 48);
+					
 				}
 				else 
 				{ 
@@ -474,7 +478,7 @@ public class Driving extends actr.task.Task
 				{
 					char nbackn = currentNBack.charAt(0);
 					double need = nbackn - 47; // -48 to get number from char, +1 for number of signs
-					//System.out.println("signsNeeded: " + need + "\n");
+					System.out.println("signsNeeded: " + need + "\n");
 					return need;		
 				}
 				else 
