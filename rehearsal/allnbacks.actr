@@ -309,7 +309,7 @@
 ;part 1 (*): build list until n speed signs have been passed
 ;part 2: perform n-back task
 
-(p nback-'memorise'-sign-0back-only
+(p nback-follow-0back
     =goal>
         isa nback
         status read-nback
@@ -338,7 +338,7 @@
         isa nback
         status read-nback
         > ntask 0
-        ntask =x		;; if ntask 2 need 1 signs
+        ntask =x
         < num =x
     =visual>
         isa speedsign
@@ -850,7 +850,8 @@
         > ntask 3
     =retrieval>
         isa nback-state
-        slimit =nbackspeed
+        1back =1back
+==>
     =goal>
         status remember4
     +retrieval>
