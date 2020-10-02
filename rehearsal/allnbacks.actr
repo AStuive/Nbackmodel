@@ -358,7 +358,7 @@
     =imaginal>
         isa nback-state
         id =cid
-        slimit =tlimit
+        slimit =tlimit		;;taken from sign
     -imaginal>
     +imaginal>
         isa nback-state
@@ -366,7 +366,7 @@
         nbackspeed =tlimit ;perform 0-back until enough signs have been passed
 )
 
-(p nback-memorise-sign-more-than-0back
+(p nback-memorise-sign ;; for nbacks > 0
     =goal>
         isa nback
         status read-nback
@@ -392,6 +392,11 @@
     =imaginal>
         id =cid
         slimit =tlimit
+        ;;  -imaginal>
+        ;;  +imaginal>
+        ;;isa nback-state
+        ;;1back =cid 
+        ;;nbackspeed =tlimit
     +retrieval>
         isa nback-state
         id =1back
@@ -479,7 +484,8 @@
     =goal>
         isa nback
         status rehearse2
-        rehearsal t
+        needsigns =x
+        < num =x
         num 3   
     =retrieval>
         isa nback-state
@@ -502,7 +508,6 @@
     =goal>
         isa nback
         status rehearse3
-        rehearsal t
         needsigns =x
         < num =x
         num 4
@@ -532,9 +537,12 @@
         isa nback
         status rehearse0
         > num 1
-    =retrieval>
+    =retrieval>		;; why does this fail?
         isa nback-state
         1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
     =visual-location>
         isa visual-location
         - kind speedsign
@@ -550,7 +558,7 @@
         :attended new
 )
 
-(p nback-rehearse-sign-0back-no-further
+(p nback-rehearse-sign-0back-and-stop
     =goal>
         isa nback
         status rehearse0
@@ -576,6 +584,7 @@
     =goal>
         isa nback
         status rehearse1
+        > ntask 1
         > num 2
     =retrieval>
         isa nback-state
@@ -595,7 +604,7 @@
         :attended new
 )
 
-(p nback-rehearse-sign-1back-no-further
+(p nback-rehearse-sign-1back-and-stop
     =goal>
         isa nback
         status rehearse1
@@ -621,6 +630,7 @@
     =goal>
         isa nback
         status rehearse2
+        > ntask 2
         > num 3
     =retrieval>
         isa nback-state
@@ -640,7 +650,7 @@
         :attended new
 )
 
-(p nback-rehearse-sign-2back-no-further
+(p nback-rehearse-sign-2back-and-stop
     =goal>
         isa nback
         status rehearse3
@@ -663,11 +673,14 @@
         :attended new
 )
 
+
+
 (p nback-rehearse-sign-3back
     =goal>
         isa nback
         status rehearse3
-        > num 4
+        > ntask 3
+        > num 4 
     =retrieval>
         isa nback-state
         1back =1back
@@ -686,10 +699,10 @@
         :attended new
 )
 
-(p nback-rehearse-signs-3back-no-further
+(p nback-rehearse-signs-3back-and-stop
     =goal>
         isa nback
-        status rehearse4
+        status rehearse3
         ntask 3
     =retrieval>
         isa nback-state
@@ -713,6 +726,7 @@
     =goal>
         isa nback
         status rehearse4
+        ntask 4
         >= num 5
     =retrieval>
         isa nback-state
@@ -750,25 +764,6 @@
 
 ;;----------------------REMEMBER------------------------------------------
 
-(p nback-remember-sign-0back-stop
-    =goal>
-        isa nback
-        status remember1
-        ntask 0
-    =imaginal>
-        id =1back        
-==>
-    =goal>
-        status notice
-        rehearsal t
-    -imaginal>
-    +imaginal>
-        isa nback-state
-        1back =1back
-        nbackspeed =nbackspeed
-)
-
-;;--------------------
 (p nback-remember-sign-1back-go-further
     =goal>
         isa nback
@@ -785,7 +780,7 @@
         id =1back
 )
 
-(p nback-remember-sign-1back-stop
+(p nback-remember-sign-1back-and-stop
     =goal>
         isa nback
         status remember1
@@ -822,7 +817,7 @@
         id =1back
 )
 
-(p nback-remember-sign-2back-stop
+(p nback-remember-sign-2back-and-stop
     =goal>
         isa nback
         status remember2
@@ -831,7 +826,7 @@
         isa nback-state
         slimit =nbackspeed
     =imaginal>
-        id =1back
+        id =1back   
 ==>
     =goal>
         status notice
@@ -859,15 +854,16 @@
         id =1back
 )
 
-(p nback-remember-sign-3back-stop
+(p nback-remember-sign-3back-and-stop
     =goal>
         isa nback
         status remember3
-        task 3
-    ?retrieval>
-        state error
+        ntask 3
+    =retrieval>
+        isa nback-state
+        slimit =nbackspeed
     =imaginal>
-        id =1back
+        id =1back   
 ==>
     =goal>
         status notice
@@ -879,7 +875,7 @@
         nbackspeed =nbackspeed
 )
 ;;--------------------
-(p nback-remember-sign-4back
+(p nback-remember-sign-4back-and-stop
     =goal>
         isa nback
         status remember4 
