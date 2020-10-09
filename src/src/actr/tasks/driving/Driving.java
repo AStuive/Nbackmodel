@@ -40,7 +40,7 @@ public class Driving extends actr.task.Task
 	final double thwFollow = 1.0;
 	final double thwMax = 4.0;
 
-	double startTime=0, endTime=180;
+	double startTime=0, endTime=180;					// STOPS EVERYTHING
 	double accelBrake=0, speed=0;
 
 	static int minX=174, maxX=(238+24), minY=94, maxY=(262+32);
@@ -174,9 +174,8 @@ public class Driving extends actr.task.Task
 
 		//add instructions
 		// 180
-		if((int)time%180 == 0 && instructionsSeen == false)
+		if((int)time%180== 0 && instructionsSeen == false)		
 		{
-			//System.out.println("instructions\n"); 
 			currentNBack = nBack_list[nback_count];
 			//System.out.println(currentNBack +"\n"); 
 			getModel().getVision().addVisual("instructions", "instructions", currentNBack, 200, 100, 50, 50);
@@ -186,7 +185,6 @@ public class Driving extends actr.task.Task
 			nback_count += 1;
 		} else if(time - instructionsOnset >= 2)
 		{
-			//System.out.println("no instructions\n");
 			//System.out.println(currentNBack +"\n"); // still an nback value
 			getModel().getVision().removeVisual("instructions");
 			instructionsSeen = false;
@@ -222,7 +220,7 @@ public class Driving extends actr.task.Task
 				signOnset = time;
 				signSeen = true;
 			}
-		} else if(time - signOnset >= 3)
+		} else if(signSeen && time - signOnset >= 3)
 		{
 			getModel().getVision().removeVisual("speedsign");
 			signSeen = false;
@@ -314,14 +312,16 @@ public class Driving extends actr.task.Task
 		double diff = (tlimit - speed);
 		double time = simulation.env.time - startTime;
 
-		//display warning if the speed limit is not kept
-		if(Math.abs(diff)>1.39 && warningSeen == false && (time - signOnset)>5) //1.39 m/s is roughly 5 km/h
-		{
+		//display warning if the speed limit is not kept (method says 6 seconds (3 before and after))
+		
+		// time-signOnset before! 
+		if( Math.abs(diff)>1.39 && warningSeen == false && (time - signOnset)>3) //1.39 m/s is roughly 5 km/h
+		{	
 			warningOnset = time;
 			getModel().getVision().addVisual("warning", "warning", "warning", 200, 100, 50, 50);
 			warning.setLocation(200, 50);
 			warningSeen = true;
-		}else if (time - warningOnset > 3)
+		} else if (time - warningOnset > 3)
 		{
 			getModel().getVision().removeVisual("warning");
 			//warningOnset = time;
@@ -385,6 +385,7 @@ public class Driving extends actr.task.Task
 		}
 		else if (cmd.equals ("keep-limit"))
 		{
+			// get the (imaginal) speed of the car
 			double tlimit = Double.valueOf (it.next());
 			keepLimit (tlimit);
 		}
@@ -442,6 +443,11 @@ public class Driving extends actr.task.Task
 				sign_count += 1;
 				return sign_count;
 			}
+			else if (cmd.equals ("reset-num-sign"))
+			{
+				sign_count = 0;
+				return sign_count;
+			}
 			else if (cmd.equals ("get-num-rehearsal"))
 			{
 				//number of rehearsals per iteration
@@ -460,14 +466,14 @@ public class Driving extends actr.task.Task
 				if (!currentNBack.isEmpty())
 				{
 					char nbackn = currentNBack.charAt(0); 
-					System.out.println("nback: " + nbackn + "\n");
+					//System.out.println("nback: " + nbackn + "\n");
 					//System.out.println(Arrays.toString(nBack_list));
 					return (double)(nbackn - 48);
 					
 				}
 				else 
 				{ 
-					System.out.println("no currentNBack\n");
+					//System.out.println("no currentNBack\n");
 					return 5;
 				} 
 			}
@@ -478,7 +484,7 @@ public class Driving extends actr.task.Task
 				{
 					char nbackn = currentNBack.charAt(0);
 					double need = nbackn - 47; // -48 to get number from char, +1 for number of signs
-					System.out.println("signsNeeded: " + need + "\n");
+					//System.out.println("signsNeeded: " + need + "\n");
 					return need;		
 				}
 				else 

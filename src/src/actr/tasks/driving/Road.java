@@ -414,7 +414,7 @@ public class Road extends Driving
 			Font myFont = new Font("Helvetica", Font.BOLD, 16); //instruction font
 			g.setFont(myFont);
 			g.setColor(Color.black);
-			g.drawString(Driving.currentNBack, 200, 50);
+			g.drawString("Current task: " + Driving.currentNBack, 250, 50);
 		}
 	}
 	

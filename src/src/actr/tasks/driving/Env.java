@@ -64,7 +64,7 @@ public class Env
 
 		road.draw (g, this);
 		road.drawSign(g, this);
-		//road.drawInstructions(g, this);
+		road.drawInstructions(g, this);
 		road.drawWarning(g, this);
 		//autocar.draw (g, this);
 		simcar.draw (g, this);

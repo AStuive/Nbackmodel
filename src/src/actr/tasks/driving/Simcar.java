@@ -253,11 +253,17 @@ public class Simcar extends Vehicle
 		//mh - speedometer
 		double speedNum = car_speed;
 		String speed = Integer.toString((int)Utilities.mph2kph(Utilities.mps2mph(speedNum)));
-		
 		Font myFont = new Font("Helvetica", Font.BOLD, 18);
 		g.setFont(myFont);
 		g.setColor(Color.WHITE);
-		g.drawString(speed, 150, 315);
+		
+		if (speed.length()>2) 
+		{
+			g.drawString(speed, 145, 315);
+		} else {
+			g.drawString(speed, 150, 315); 
+		}
+		
 		
 		/* testing instructions
 		// get which nback int num; String instr = num + " back task"; 
