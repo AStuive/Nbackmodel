@@ -259,24 +259,18 @@
 )
 
 ; WIP, not getting the nback from screen
-(p notice-instructions
+(p notice-instructions-from-javaside
     =goal>
         isa nback
         status noticeIn
         ntask blank
         needsigns blank
-        ;=visual-location>
-        ;   isa visual-location
-        ;   :attended nil
-        ;   kind instructions
-        ; ?visual>
-        ;  state free
 ==>
     !bind! =numb (get-nback)
     !bind! =res (get-signsneeded)
     =goal>
         isa nback
-        status notice
+        status notice		;; sixty/notice
         ntask =numb
         needsigns =res
 )
