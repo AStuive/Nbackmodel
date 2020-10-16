@@ -176,10 +176,6 @@
         fkind2 =fkind
         ;fthw2 =fthw
         time2 =time
-    +visual-location>
-        isa visual-location
-        kind speedsign
-        :attended new
 )
 
 (p drive*loop-not-stable
@@ -206,10 +202,6 @@
         fkind2 =fkind
         ;fthw2 =fthw
         time2 =time
-    +visual-location>
-        isa visual-location
-        kind speedsign
-        :attended new
 )
 
 (p drive*reset
