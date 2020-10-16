@@ -8,8 +8,7 @@ import javax.swing.*;
 import javax.swing.text.*;
 import resources.Resources;
 
-class Actions
-{
+class Actions {
 	private Core core;
 	private Frame frame;
 
@@ -17,213 +16,217 @@ class Actions
 	Action undoAction, redoAction, cutAction, copyAction, pasteAction;
 	Action findAction, findNextAction, findPreviousAction, findHideAction, prefsAction;
 	Action runAction, runAnalysisAction, stopAction, resumeAction;
-	Action outputBuffersAction, outputWhyNotAction, outputDMAction, outputPRAction, outputVisiconAction, outputTasksAction;
+	Action outputBuffersAction, outputWhyNotAction, outputDMAction, outputPRAction, outputVisiconAction,
+			outputTasksAction;
 
-	Actions (final Core core, final Frame frame)
-	{
+	Actions(final Core core, final Frame frame) {
 		this.core = core;
 		this.frame = frame;
 
-		newAction = new AbstractAction ("New...", Resources.getIcon("jlfNew16.gif")) {
-			public void actionPerformed (ActionEvent e) {
+		newAction = new AbstractAction("New...", Resources.getIcon("jlfNew16.gif")) {
+			public void actionPerformed(ActionEvent e) {
 				core.newFrame();
 			}
 		};
-		openAction = new AbstractAction ("Open...", Resources.getIcon("jlfOpen16.gif")) {
-			public void actionPerformed (ActionEvent e) {
-				core.openFrame ();
+		openAction = new AbstractAction("Open...", Resources.getIcon("jlfOpen16.gif")) {
+			public void actionPerformed(ActionEvent e) {
+				core.openFrame();
 			}
 		};
-		closeAction = new AbstractAction ("Close") {
-			public void actionPerformed (ActionEvent e) {
-				core.closeFrame (frame);
+		closeAction = new AbstractAction("Close") {
+			public void actionPerformed(ActionEvent e) {
+				core.closeFrame(frame);
 			}
 		};
-		saveAction = new AbstractAction ("Save", Resources.getIcon("jlfSave16.gif")) {
-			public void actionPerformed (ActionEvent e) {
-				frame.save (false);
+		saveAction = new AbstractAction("Save", Resources.getIcon("jlfSave16.gif")) {
+			public void actionPerformed(ActionEvent e) {
+				frame.save(false);
 			}
 		};
-		saveAsAction = new AbstractAction ("Save As...") {
-			public void actionPerformed (ActionEvent e) {
-				frame.save (true);
+		saveAsAction = new AbstractAction("Save As...") {
+			public void actionPerformed(ActionEvent e) {
+				frame.save(true);
 			}
 		};
-		printAction = new AbstractAction ("Print...", Resources.getIcon("jlfPrint16.gif")) {
-			public void actionPerformed (ActionEvent e) {
-				frame.print ();
+		printAction = new AbstractAction("Print...", Resources.getIcon("jlfPrint16.gif")) {
+			public void actionPerformed(ActionEvent e) {
+				frame.print();
 			}
 		};
-		aboutAction = new AbstractAction ("About ACT-R") {
-			public void actionPerformed (ActionEvent e) {
-				core.openAboutDialog ();
+		aboutAction = new AbstractAction("About ACT-R") {
+			public void actionPerformed(ActionEvent e) {
+				core.openAboutDialog();
 			}
 		};
-		quitAction = new AbstractAction ("Quit") {
-			public void actionPerformed (ActionEvent e) {
-				core.quit ();
+		quitAction = new AbstractAction("Quit") {
+			public void actionPerformed(ActionEvent e) {
+				core.quit();
 			}
 		};
 
-		undoAction = new AbstractAction ("Undo", Resources.getIcon("jlfUndo16.gif")) {
-			public void actionPerformed (ActionEvent e) { frame.getDocument().undo(); update(); }
+		undoAction = new AbstractAction("Undo", Resources.getIcon("jlfUndo16.gif")) {
+			public void actionPerformed(ActionEvent e) {
+				frame.getDocument().undo();
+				update();
+			}
 		};
-		redoAction = new AbstractAction ("Redo", Resources.getIcon("jlfRedo16.gif")) {
-			public void actionPerformed (ActionEvent e) { frame.getDocument().redo(); update(); }
+		redoAction = new AbstractAction("Redo", Resources.getIcon("jlfRedo16.gif")) {
+			public void actionPerformed(ActionEvent e) {
+				frame.getDocument().redo();
+				update();
+			}
 		};
 
 		cutAction = new StyledEditorKit.CutAction();
-		cutAction.putValue (Action.NAME, "Cut");
-		cutAction.putValue (Action.LARGE_ICON_KEY, Resources.getIcon("jlfCut16.gif"));
+		cutAction.putValue(Action.NAME, "Cut");
+		cutAction.putValue(Action.LARGE_ICON_KEY, Resources.getIcon("jlfCut16.gif"));
 		copyAction = new StyledEditorKit.CopyAction();
-		copyAction.putValue (Action.NAME, "Copy");
-		copyAction.putValue (Action.LARGE_ICON_KEY, Resources.getIcon("jlfCopy16.gif"));
+		copyAction.putValue(Action.NAME, "Copy");
+		copyAction.putValue(Action.LARGE_ICON_KEY, Resources.getIcon("jlfCopy16.gif"));
 		pasteAction = new StyledEditorKit.PasteAction();
-		pasteAction.putValue (Action.NAME, "Paste");
-		pasteAction.putValue (Action.LARGE_ICON_KEY, Resources.getIcon("jlfPaste16.gif"));
+		pasteAction.putValue(Action.NAME, "Paste");
+		pasteAction.putValue(Action.LARGE_ICON_KEY, Resources.getIcon("jlfPaste16.gif"));
 
-		findAction = new AbstractAction ("Find", Resources.getIcon("jlfFind16.gif")) {
-			public void actionPerformed (ActionEvent e) {
+		findAction = new AbstractAction("Find", Resources.getIcon("jlfFind16.gif")) {
+			public void actionPerformed(ActionEvent e) {
 				frame.find();
 			}
 		};
-		findNextAction = new AbstractAction ("Find Next", Resources.getIcon("jlfFindAgain16.gif")) {
-			public void actionPerformed (ActionEvent e) {
+		findNextAction = new AbstractAction("Find Next", Resources.getIcon("jlfFindAgain16.gif")) {
+			public void actionPerformed(ActionEvent e) {
 				frame.findNext();
 			}
 		};
-		findPreviousAction = new AbstractAction ("Find Previous", Resources.getIcon("FindPrevious16.gif")) {
-			public void actionPerformed (ActionEvent e) {
+		findPreviousAction = new AbstractAction("Find Previous", Resources.getIcon("FindPrevious16.gif")) {
+			public void actionPerformed(ActionEvent e) {
 				frame.findPrevious();
 			}
 		};
-		findHideAction = new AbstractAction ("Find Hide") {
-			public void actionPerformed (ActionEvent e) {
+		findHideAction = new AbstractAction("Find Hide") {
+			public void actionPerformed(ActionEvent e) {
 				frame.findHide();
 			}
 		};
-		prefsAction = new AbstractAction ("Preferences...") {
-			public void actionPerformed (ActionEvent e) {
+		prefsAction = new AbstractAction("Preferences...") {
+			public void actionPerformed(ActionEvent e) {
 				core.openPreferencesDialog();
 			}
 		};
 
-		runAction = new AbstractAction ("Run", Resources.getIcon("jlfPlay16.gif")) {
-			public void actionPerformed (ActionEvent e) {
+		runAction = new AbstractAction("Run", Resources.getIcon("jlfPlay16.gif")) {
+			public void actionPerformed(ActionEvent e) {
 				frame.run();
 			}
 		};
-		runAnalysisAction = new AbstractAction ("Run Analysis", Resources.getIcon("jlfFastForward16.gif")) {
-			public void actionPerformed (ActionEvent e) {
+		runAnalysisAction = new AbstractAction("Run Analysis", Resources.getIcon("jlfFastForward16.gif")) {
+			public void actionPerformed(ActionEvent e) {
 				frame.runAnalysis();
 			}
 		};
-		stopAction = new AbstractAction ("Stop", Resources.getIcon("jlfStop16.gif")) {
-			public void actionPerformed (ActionEvent e) {
+		stopAction = new AbstractAction("Stop", Resources.getIcon("jlfStop16.gif")) {
+			public void actionPerformed(ActionEvent e) {
 				frame.stop();
 			}
 		};
-		resumeAction = new AbstractAction ("Resume", Resources.getIcon("jlfStepForward16.gif")) {
-			public void actionPerformed (ActionEvent e) {
+		resumeAction = new AbstractAction("Resume", Resources.getIcon("jlfStepForward16.gif")) {
+			public void actionPerformed(ActionEvent e) {
 				frame.resume();
 			}
 		};
 
-		outputBuffersAction = new AbstractAction ("Buffers") {
-			public void actionPerformed (ActionEvent e) {
+		outputBuffersAction = new AbstractAction("Buffers") {
+			public void actionPerformed(ActionEvent e) {
 				frame.outputBuffers();
 			}
 		};
-		outputWhyNotAction = new AbstractAction ("\"Why Not\"") {
-			public void actionPerformed (ActionEvent e) {
+		outputWhyNotAction = new AbstractAction("\"Why Not\"") {
+			public void actionPerformed(ActionEvent e) {
 				frame.outputWhyNot();
 			}
 		};
-		outputDMAction = new AbstractAction ("Declarative Memory") {
-			public void actionPerformed (ActionEvent e) {
+		outputDMAction = new AbstractAction("Declarative Memory") {
+			public void actionPerformed(ActionEvent e) {
 				frame.outputDeclarative();
 			}
 		};
-		outputPRAction = new AbstractAction ("Production Rules") {
-			public void actionPerformed (ActionEvent e) {
+		outputPRAction = new AbstractAction("Production Rules") {
+			public void actionPerformed(ActionEvent e) {
 				frame.outputProcedural();
 			}
 		};
-		outputVisiconAction = new AbstractAction ("Visual Objects") {
-			public void actionPerformed (ActionEvent e) {
+		outputVisiconAction = new AbstractAction("Visual Objects") {
+			public void actionPerformed(ActionEvent e) {
 				frame.outputVisualObjects();
 			}
 		};
 	}
 
-	Action createOpenRecentAction (final File file)
-	{
-		return new AbstractAction (file.getName()) {
-			public void actionPerformed (ActionEvent e) {
-				core.openFrame (file);
+	Action createOpenRecentAction(final File file) {
+		return new AbstractAction(file.getName()) {
+			public void actionPerformed(ActionEvent e) {
+				core.openFrame(file);
 			}
 		};
 	}
 
-	void update ()
-	{
-		if (frame == null) return;
+	void update() {
+		if (frame == null)
+			return;
 
-		newAction.setEnabled (true);
-		openAction.setEnabled (true);
+		newAction.setEnabled(true);
+		openAction.setEnabled(true);
 		frame.getMenus().updateOpenRecent();
-		closeAction.setEnabled (true);
-		saveAction.setEnabled (frame.getDocument()!=null && frame.getDocument().isChanged());
-		saveAsAction.setEnabled (frame.getDocument()!=null);
+		closeAction.setEnabled(true);
+		saveAction.setEnabled(frame.getDocument() != null && frame.getDocument().isChanged());
+		saveAsAction.setEnabled(frame.getDocument() != null);
 
-		undoAction.setEnabled (frame.getDocument()!=null
-				&& frame.getEditor().hasFocus()
-				&& frame.getDocument().canUndo());
-		redoAction.setEnabled (frame.getDocument()!=null
-				&& frame.getEditor().hasFocus()
-				&& frame.getDocument().canRedo());
-		cutAction.setEnabled (frame.getEditor()!=null
+		undoAction.setEnabled(
+				frame.getDocument() != null && frame.getEditor().hasFocus() && frame.getDocument().canUndo());
+		redoAction.setEnabled(
+				frame.getDocument() != null && frame.getEditor().hasFocus() && frame.getDocument().canRedo());
+		cutAction.setEnabled(frame.getEditor() != null
 				// && frame.getEditor().hasFocus()
-				&& frame.getEditor().getSelectedText()!=null);
-		copyAction.setEnabled (frame.getEditor()!=null
-				//&& frame.getEditor().hasFocus()
-				&& frame.getEditor().getSelectedText()!=null);
-
-		pasteAction.setEnabled (frame.getEditor()!=null
+				&& frame.getEditor().getSelectedText() != null);
+		copyAction.setEnabled(frame.getEditor() != null
 				// && frame.getEditor().hasFocus()
-				&& (Main.inApplet()
-						|| Toolkit.getDefaultToolkit().getSystemClipboard().getContents(this) != null));
+				&& frame.getEditor().getSelectedText() != null);
 
-		findAction.setEnabled (true);
-		findNextAction.setEnabled (frame.isFindNextPossible());
-		findPreviousAction.setEnabled (frame.isFindNextPossible());
+		pasteAction.setEnabled(frame.getEditor() != null
+				// && frame.getEditor().hasFocus()
+				&& (Main.inApplet() || Toolkit.getDefaultToolkit().getSystemClipboard().getContents(this) != null));
+
+		findAction.setEnabled(true);
+		findNextAction.setEnabled(frame.isFindNextPossible());
+		findPreviousAction.setEnabled(frame.isFindNextPossible());
 
 		boolean runEnabled = !core.isAnyModelRunning();
-		runAction.setEnabled (runEnabled); // && frame.isModelFile());
-		runAnalysisAction.setEnabled (runEnabled);
-		stopAction.setEnabled (core.hasLock (frame));
-		resumeAction.setEnabled (runEnabled && frame.getModel()!=null && !frame.getModel().isDone());
+		runAction.setEnabled(runEnabled); // && frame.isModelFile());
+		runAnalysisAction.setEnabled(runEnabled);
+		stopAction.setEnabled(core.hasLock(frame));
+		resumeAction.setEnabled(runEnabled && frame.getModel() != null && !frame.getModel().isDone());
 
-		boolean outputEnabled = frame.getModel()!=null;
-		outputBuffersAction.setEnabled (outputEnabled);
-		outputWhyNotAction.setEnabled (outputEnabled);
-		outputDMAction.setEnabled (outputEnabled);
-		outputPRAction.setEnabled (outputEnabled);
-		outputVisiconAction.setEnabled (outputEnabled);
+		boolean outputEnabled = frame.getModel() != null;
+		outputBuffersAction.setEnabled(outputEnabled);
+		outputWhyNotAction.setEnabled(outputEnabled);
+		outputDMAction.setEnabled(outputEnabled);
+		outputPRAction.setEnabled(outputEnabled);
+		outputVisiconAction.setEnabled(outputEnabled);
 
 		boolean changed = frame.getDocument().isChanged();
-		frame.getRootPane().putClientProperty ("Window.documentModified", changed);
+		frame.getRootPane().putClientProperty("Window.documentModified", changed);
 		String title = frame.getFileName();
-		if (changed) title = "*"+title;
-		frame.setTitle (title);
+		if (changed)
+			title = "*" + title;
+		frame.setTitle(title);
 	}
 
-	Action createAppletFileAction (final String name)
-	{
-		return new AbstractAction (name) {
-			public void actionPerformed (ActionEvent e) {
-				try { frame.open (new URL (Main.getApplet().getCodeBase(), "models/"+name)); }
-				catch (Exception ex) { }
+	Action createAppletFileAction(final String name) {
+		return new AbstractAction(name) {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					frame.open(new URL(Main.getApplet().getCodeBase(), "models/" + name));
+				} catch (Exception ex) {
+				}
 			}
 		};
 	}

@@ -41,6 +41,7 @@ public class Model
 	boolean bufferStuffing = true;
 	boolean boldOut = false; //mlh
 	boolean traceOut = false; //mlh
+	double queuedStuffing = 0.0;
 
 	//output = new Vector<Sample> (); //mlh
 	List<String> output = new ArrayList<String>();	
@@ -526,6 +527,7 @@ public class Model
 		else if (parameter.equals(":case-sensitive")) t.caseSensitive = (!value.equals("nil"));
 		else if (parameter.equals(":bout")) boldOut = (!value.equals("nil")); //mlh
 		else if (parameter.equals(":trout")) traceOut = (!value.equals("nil")); //mlh
+		else if (parameter.equals(":qs")) queuedStuffing = Double.valueOf(value);
 
 		else recordWarning("ignoring parameter "+parameter, t);
 	}

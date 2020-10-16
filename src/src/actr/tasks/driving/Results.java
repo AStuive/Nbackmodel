@@ -2,11 +2,10 @@ package actr.tasks.driving;
 
 /**
  * A class that defines useful measures for data collection.
- *  
+ * 
  * @author Dario Salvucci
  */
-public class Results
-{
+public class Results {
 	Driver driver;
 
 	double taskTime;
@@ -18,8 +17,8 @@ public class Results
 	double detectionError;
 	double brakeRT;
 
-	public String toString ()
-	{
-		return "(" + taskTime + ", " + taskLatDev + ", " + taskLatVel + ", " + brakeRT + ", " + headingError + ", " + taskSpeedDev + ")";
+	public String toString() {
+		return "(" + taskTime + ", " + taskLatDev + ", " + taskLatVel + ", " + brakeRT + ", " + headingError + ", "
+				+ taskSpeedDev + ")";
 	}
 }

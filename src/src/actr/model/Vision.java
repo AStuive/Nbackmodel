@@ -177,13 +177,12 @@ public class Vision extends Module {
 	 * 
 	 */
 
-	// MORITZ FUNCTION
 	public void queuedStuffing() {
 
 		Iterator<VisualObject> it = visicon.values().iterator();
 		while (it.hasNext()) {
 			VisualObject vo = it.next();
-			if ((model.getTime() - vo.creationTime) < 0.1 && vo.creationTime != 0) {
+			if ((model.getTime() - vo.creationTime) < model.queuedStuffing && vo.creationTime != 0) {
 				if (model.bufferStuffing && vo.attendedTime == 0 && (model.getBuffers().get(Symbol.visloc) == null
 						|| model.getBuffers().get(Symbol.vislocState).get(Symbol.buffer) == Symbol.unrequested)) {
 					double newDist = Utilities.distance(vo.x, vo.y, lastVisLocRequestX, lastVisLocRequestY);
@@ -498,7 +497,7 @@ public class Vision extends Module {
 	}
 
 	void update() {
-		queuedStuffing();						// MORITZ FUNCTION
+		queuedStuffing();
 		for (int i = 0; i < finsts.size(); i++) {
 			VisualObject vo = finsts.elementAt(i);
 			if (vo.attendedTime < model.getTime() - visualFinstSpan) {
