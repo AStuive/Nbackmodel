@@ -6,7 +6,7 @@ import java.io.*;
 import actr.env.*;
 //import actr.model.Bold.Activity;
 import actr.task.Task;
-//import actr.tasks.driving.Sample;
+import actr.tasks.driving.Sample;
 
 /**
  * The highest-level class representing an ACT-R model.
@@ -41,11 +41,9 @@ public class Model
 	boolean bufferStuffing = true;
 	boolean boldOut = false; //mlh
 	boolean traceOut = false; //mlh
-	double queuedStuffing = 0.0;
 
 	//output = new Vector<Sample> (); //mlh
 	List<String> output = new ArrayList<String>();	
-	public static String outputPath = ""; 
 
 	private Model (Frame frame)
 	{
@@ -527,7 +525,6 @@ public class Model
 		else if (parameter.equals(":case-sensitive")) t.caseSensitive = (!value.equals("nil"));
 		else if (parameter.equals(":bout")) boldOut = (!value.equals("nil")); //mlh
 		else if (parameter.equals(":trout")) traceOut = (!value.equals("nil")); //mlh
-		else if (parameter.equals(":qs")) queuedStuffing = Double.valueOf(value);
 
 		else recordWarning("ignoring parameter "+parameter, t);
 	}
@@ -673,14 +670,21 @@ public class Model
 		return s;
 	}
 
-	//mlh
+	//make directory universal
 	public static void print(List<String> output, String filename)
 	{
 		String nbackLevel = Main.core.getFilename();
 		nbackLevel = nbackLevel.replace(".actr", "");
+		String directoryName = System.getProperty("user.dir") + "\\Output";
+		String fileName = directoryName + "\\";
+
+		File directory = new File(directoryName);
+		if (! directory.exists()) {
+			directory.mkdir();
+		}
+
 		try {
-			FileWriter writer = new FileWriter(
-					outputPath + nbackLevel + filename + System.currentTimeMillis() +".txt");
+			FileWriter writer = new FileWriter(fileName + nbackLevel + filename + System.currentTimeMillis() +".txt");
 			for (String str:output) {
 				writer.write(str);
 			}
