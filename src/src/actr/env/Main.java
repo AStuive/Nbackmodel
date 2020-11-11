@@ -9,12 +9,13 @@ import java.net.URL;
 import javax.swing.*;
 
 /**
- * The class that defines <tt>main()</tt>, determines the operating system
- * platform, and opens the application.
+ * The class that defines <tt>main()</tt>, determines the operating system platform,
+ * and opens the application.
  * 
  * @author Dario Salvucci
  */
-public class Main extends JApplet {
+public class Main extends JApplet
+{
 	/** The application's version string. */
 	private static final String version = "1.1";
 
@@ -26,99 +27,81 @@ public class Main extends JApplet {
 
 	/**
 	 * Checks whether the application is running on the Macintosh platform.
-	 * 
-	 * @return <tt>true</tt> if the system is running on the Macintosh platform, or
-	 *         <tt>false</tt> otherwise
+	 * @return <tt>true</tt> if the system is running on the Macintosh platform, or <tt>false</tt> otherwise
 	 */
-	public static boolean onMac() {
-		return System.getProperty("os.name").toLowerCase().contains("mac");
-	}
+	public static boolean onMac() { return System.getProperty("os.name").toLowerCase().contains("mac"); }
 
 	/**
 	 * Checks whether the application is running on the Windows platform.
-	 * 
-	 * @return <tt>true</tt> if the system is running on the Windows platform, or
-	 *         <tt>false</tt> otherwise
+	 * @return <tt>true</tt> if the system is running on the Windows platform, or <tt>false</tt> otherwise
 	 */
-	public static boolean onWin() {
-		return System.getProperty("os.name").toLowerCase().contains("win");
-	}
+	public static boolean onWin() { return System.getProperty("os.name").toLowerCase().contains("win"); }
 
 	/**
 	 * Checks whether the application is running on a *NIX platform.
-	 * 
-	 * @return <tt>true</tt> if the system is running on a *NIX platform, or
-	 *         <tt>false</tt> otherwise
+	 * @return <tt>true</tt> if the system is running on a *NIX platform, or <tt>false</tt> otherwise
 	 */
-	public static boolean onNix() {
+	public static boolean onNix()
+	{
 		return System.getProperty("os.name").toLowerCase().contains("nix")
-				|| System.getProperty("os.name").toLowerCase().contains("nux");
+		|| System.getProperty("os.name").toLowerCase().contains("nux");
 	}
 
 	/**
 	 * Returns the current applet, or none if running as an application.
-	 * 
-	 * @return the applet if the system is running as an applet, or <tt>null</tt>
-	 *         otherwise
+	 * @return the applet if the system is running as an applet, or <tt>null</tt> otherwise
 	 */
-	public static JApplet getApplet() {
-		return applet;
-	}
+	public static JApplet getApplet() { return applet; }
 
 	/**
 	 * Checks whether the system is running as an applet.
-	 * 
-	 * @return <tt>true</tt> if the system is running as an applet, or
-	 *         <tt>false</tt> otherwise
+	 * @return <tt>true</tt> if the system is running as an applet, or <tt>false</tt> otherwise
 	 */
-	public static boolean inApplet() {
-		return applet != null;
-	}
+	public static boolean inApplet() { return applet!=null; }
 
 	/**
 	 * Checks whether the system is running as an application.
-	 * 
-	 * @return <tt>true</tt> if the system is running as an application, or
-	 *         <tt>false</tt> otherwise
+	 * @return <tt>true</tt> if the system is running as an application, or <tt>false</tt> otherwise
 	 */
-	public static boolean inApplication() {
-		return applet == null;
-	}
+	public static boolean inApplication() { return applet==null; }
 
 	/**
 	 * Gets the version string, including main version number and revision number.
-	 * 
 	 * @return the version string
 	 */
-	public static String getVersion() {
-		if (inApplication()) {
-			try {
-				URL url = Main.class.getResource("Version.txt");
-				InputStream in = url.openStream();
-				StringWriter sw = new StringWriter();
+	public static String getVersion ()
+	{
+		if (inApplication())
+		{
+			try
+			{
+				URL url = Main.class.getResource ("Version.txt");
+				InputStream in = url.openStream ();
+				StringWriter sw = new StringWriter ();
 				int c;
-				while ((c = in.read()) != -1)
-					sw.write(c);
+				while ((c = in.read()) != -1) sw.write (c);
 				in.close();
 				return version + " r" + sw.toString();
-			} catch (Exception e) {
+			}
+			catch (Exception e)
+			{
 				e.printStackTrace();
 				return version;
 			}
-		} else
-			return version;
+		}
+		else return version;
 	}
 
 	/**
 	 * The main method called on startup of the application.
-	 * 
 	 * @param args the arguments
 	 */
-	public static void main(String[] args) {
-		if (!onMac()) // MacOS.start();
-		// else
+	public static void main (String[] args)
+	{
+		if (!onMac()) //MacOS.start();
+		//else
 		{
-			SwingUtilities.invokeLater(new Runnable() {
+			SwingUtilities.invokeLater (new Runnable() {
 				public void run() {
 					core = new Core();
 					core.startup();
@@ -130,16 +113,17 @@ public class Main extends JApplet {
 	/**
 	 * The init method called on startup of the applet.
 	 */
-	public void init() {
+	public void init ()
+	{
 		applet = this;
-		JButton button = new JButton("Launch ACT-R");
-		button.addActionListener(new ActionListener() {
+		JButton button = new JButton ("Launch ACT-R");
+		button.addActionListener (new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				core = new Core();
 				core.newFrame();
 			}
 		});
-		setLayout(new BorderLayout());
-		add(button, BorderLayout.CENTER);
+		setLayout (new BorderLayout());
+		add (button, BorderLayout.CENTER);
 	}
 }

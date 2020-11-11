@@ -1,10 +1,10 @@
 package actr.tasks.driving;
 
 import java.awt.BorderLayout;
-import java.util.Arrays;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+// import java.util.Arrays;
+// import java.io.BufferedWriter;
+// import java.io.FileWriter;
+// import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -51,7 +51,7 @@ public class Driving extends actr.task.Task
 	String previousLimit = "0";
 	int nback_count = 0;
 	double signOnset = 0; //a local variable would be better but this shows how long the sign has been visible.
-	double instructionsOnset = 0;
+	double instructionsOnset = -5;		
 	double warningOnset = 0;
 	boolean signSeen = false; //same
 	static boolean instructionsSeen = false;
@@ -90,7 +90,7 @@ public class Driving extends actr.task.Task
 			signPos = null; 
 			signOnset = 0;
 			signSeen = false; 
-			instructionsOnset = 0;
+			instructionsOnset = -5;
 			instructionsSeen = false; 
 		}
 		else
@@ -168,6 +168,7 @@ public class Driving extends actr.task.Task
 
 	void updateInstructions(double time)
 	{
+
 		//reverse order randomly for participants
 		if (nback_count == 0 && Math.round(Math.random()) == 1)
 		{
@@ -179,17 +180,18 @@ public class Driving extends actr.task.Task
 		}
 
 		//add instructions
-		// now at 3 seconds and every 60 sec
-		if(((time >= 60 && time < 5 ) || (time >= 5 && ((int)(time)%60==0))) && !instructionsSeen)		// instr at 10s?
+		// now at 3 seconds and every 60 sec		x5 seconds works as long as signs are there every 20 sec
+		
+		if(!instructionsSeen && ((time > 5 && time < 7) || (time > 1 && time%35 < 1)))		// instr at 10s?
 		{
 			instructionsSeen = true;
 			currentNBack = nBack_list[nback_count];
 			getModel().getVision().addVisual("instructions", "instructions", currentNBack.substring(0,1), 300, 50, 50, 50, 0);
 			instructions.setLocation(300, 50);
-			//System.out.println("instr at " + time + "\n");
+			System.out.println("instr at " + time + "\n");
 			instructionsOnset = time;
 			nback_count += 1;
-		} else if(time - instructionsOnset >= 2)		// 2
+		} else if((time - instructionsOnset >= 2) && instructionsOnset >= 0 && instructionsSeen)	// 2
 		{
 			getModel().getVision().removeVisual("instructions");
 			instructionsSeen = false;
@@ -201,36 +203,28 @@ public class Driving extends actr.task.Task
 		String[] speedlimits = {"60", "70", "80", "90", "100", "110", "120", "130", "140"};		
 		Env env = simulation.env;
 		Simcar simcar = simulation.env.simcar;
-		
-		//getModel().getTemporal().update(); 
-		//int tempTicks =  getTicks(); 
-		//System.out.println("temporal ticks: " + tempTicks + "\n"); 
-		
+					
 		// time%20 before!			
 		if((int)time%10 == 0 && signSeen == false && (speedI < speedlimits.length) )
 		{
 			if (env.simcar.nearPoint != null)
 			{		
-				System.out.println("Start if"); 
 				//pick a random speed with delta<30
 				previousLimit = currentLimit;
 				while (Math.abs(Integer.parseInt(currentLimit) - Integer.parseInt(previousLimit)) > 30 || (currentLimit == previousLimit))
 				{
 					int rnd = new Random().nextInt(speedlimits.length);
 					currentLimit = speedlimits[rnd];
-				}
-				System.out.println("before location"); 
+				} 
 				Position newLoc = Road.location(env.simcar.fracIndex + 20 , 3);
 				newLoc.y = 0.0;
 				signPos = env.world2image(newLoc);
-				System.out.println("after location stuff " + signPos.x + "." + signPos.y); 
-				getModel().getVision().addVisual ("speedsign", "speedsign", currentLimit, (int)signPos.x, (int)signPos.y, 1, 1, 100);
+								getModel().getVision().addVisual ("speedsign", "speedsign", currentLimit, (int)signPos.x, (int)signPos.y, 1, 1, 100);
 				speedsign.setLocation((int)signPos.x, (int)signPos.y);
-				System.out.println("after adding to visual buffer"); 
 				signOnset = time;
 				signSeen = true;
 			}
-		} else if(signSeen && time - signOnset >= 3)
+		} else if(signSeen && time - signOnset >= 2 && signOnset > 0)
 		{
 			getModel().getVision().removeVisual("speedsign");
 			signSeen = false;
@@ -241,6 +235,17 @@ public class Driving extends actr.task.Task
 			signPos.y += 3;
 			getModel().getVision().moveVisual("speedsign", (int)signPos.x, (int)signPos.y);
 			speedsign.setLocation((int)signPos.x , (int)signPos.y);
+			/*		 
+			km/h	m/s				second before sign gone (100 m)
+			60		16.66666667		6
+			70		19.44444444		5.142857143
+			80		22.22222222		4.5
+			90		25				4
+			100		27.77777778		3.6
+			110		30.55555556		3.272727273
+			120		33.33333333		3
+			130		36.11111111		2.769230769
+			  */
 		} 
 	}
 
@@ -365,13 +370,13 @@ public class Driving extends actr.task.Task
 	
 	// na = near point, fva = far?? nva = ??		velocity??
 
-	double image2angle (double x, double d)
+	double image2angle (double x, double d)		// x = near angle, d = distance
 	{
 		Env env = simulation.env;
 		double px = env.simcar.p.x + (env.simcar.h.x * d);
 		double pz = env.simcar.p.z + (env.simcar.h.z * d);
 		Coordinate im = env.world2image (new Position (px, pz));
-		try { return Math.atan2 (.5*(x-im.x), 450); }
+		try { return Math.atan2 (.5*(x-im.x), 450); }		// google
 		catch (Exception e) { return 0; }
 	}
 
@@ -413,7 +418,7 @@ public class Driving extends actr.task.Task
 		String cmd = it.next();
 		if (cmd.equals ("is-car-stable") || cmd.equals ("is-car-not-stable"))
 		{
-			double na = Double.valueOf (it.next());
+			double na = Double.valueOf (it.next());		// near angle
 			double nva = Double.valueOf (it.next());
 			double fva = Double.valueOf (it.next());
 			boolean b = isCarStable(na,nva,fva);
@@ -430,8 +435,8 @@ public class Driving extends actr.task.Task
 			String cmd = it.next();
 			if (cmd.equals ("image->angle"))
 			{
-				double x = Double.valueOf (it.next());
-				double d = Double.valueOf (it.next());
+				double x = Double.valueOf (it.next());		// near point
+				double d = Double.valueOf (it.next());		// distance
 				return image2angle (x, d);
 			}
 			else if (cmd.equals ("mp-time")) return simulation.env.time;
@@ -473,17 +478,23 @@ public class Driving extends actr.task.Task
 				return rehearsal_count;
 			} 
 			// ADDED for timing 
-			else if (cmd.equals("eval-car-position"))
+			else if (cmd.equals("eval-speed"))
 			{
-				int rnd = new Random().nextInt(3);
-				
+				int rnd = 0; 
+		
+					while (rnd == 0)
+						rnd = new Random().nextInt(3);		// in paper stable 0.07 rad (1/4 lane) = 4.01 degrees
+					// https://www.calculator.net/right-triangle-calculator.html?av=&alphav=0.07&alphaunit=r&bv=10&betav=&betaunit=d&cv=&hv=&areav=&perimeterv=&x=0&y=0
+				//}
 				return rnd; 
 				// 0 = early, 1 = safe, 2 = late
+				
 			// ADDED for range of similar experiences
 			} else if (cmd.equals("minTick"))
 			{
 				double minT = Double.valueOf (it.next());
 				minT -= tickRange; 
+				System.out.println("trying to retrieve experience between (" + minT + ", " + (minT + 2*tickRange) + ")\n");				
 				return (minT < 0) ? 0: minT; 	
 			} 
 			else return 0;

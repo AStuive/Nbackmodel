@@ -177,22 +177,31 @@ public class Vision extends Module {
 	 * 
 	 */
 
+	// MORITZ FUNCTION
 	public void queuedStuffing() {
-
+		
 		Iterator<VisualObject> it = visicon.values().iterator();
 		while (it.hasNext()) {
 			VisualObject vo = it.next();
-			if ((model.getTime() - vo.creationTime) < model.queuedStuffing && vo.creationTime != 0) {
+			//System.out.println(vo.kind);
+			if ((model.getTime() - vo.creationTime) < 0.1 && vo.creationTime != 0) {
 				if (model.bufferStuffing && vo.attendedTime == 0 && (model.getBuffers().get(Symbol.visloc) == null
 						|| model.getBuffers().get(Symbol.vislocState).get(Symbol.buffer) == Symbol.unrequested)) {
 					double newDist = Utilities.distance(vo.x, vo.y, lastVisLocRequestX, lastVisLocRequestY);
 					double curDist = 99999;
 					try {
+					//System.out.println("1"); 
 						Chunk curvisloc = model.getBuffers().get(Symbol.visloc);
-						double sx = curvisloc.get(Symbol.screenx).toDouble();
+						//System.out.println("2");
+						System.out.println("is null? : " + (curvisloc.get(Symbol.screenx).toDouble()) + "2\n");	// not null
+						double sx = curvisloc.get(Symbol.screenx).toDouble();		// this crashes
+						//System.out.println("3");
 						double sy = curvisloc.get(Symbol.screeny).toDouble();
+						//System.out.println("4");
 						curDist = Utilities.distance(sx, sy, lastVisLocRequestX, lastVisLocRequestY);
+						//System.out.println("5");
 					} catch (Exception e) {
+						System.out.println("error in queueing \n");
 					}
 
 					if (newDist < curDist) {
@@ -204,7 +213,7 @@ public class Vision extends Module {
 						model.getBuffers().setSlot(Symbol.vislocState, Symbol.buffer, Symbol.unrequested);
 					}
 				}
-			}
+			} 
 		}
 		model.noteTaskUpdated();
 	}
@@ -497,7 +506,7 @@ public class Vision extends Module {
 	}
 
 	void update() {
-		queuedStuffing();
+		queuedStuffing();						// MORITZ FUNCTION 181
 		for (int i = 0; i < finsts.size(); i++) {
 			VisualObject vo = finsts.elementAt(i);
 			if (vo.attendedTime < model.getTime() - visualFinstSpan) {
