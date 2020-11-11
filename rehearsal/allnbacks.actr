@@ -12,7 +12,7 @@
     ;---
     :rt -100
     :ans 0.125
-    :mp 11.5
+    :mp 11.5		;; partial matching?
     :lf 1.2
     ;---
     :trout t
@@ -24,10 +24,12 @@
 (add-dm
     (goal1 isa drive)
     (goal2 isa nback status start)
+    (chunk1 isa speedoexp ticks 30 timing safe)
+    
 )
 (set-all-base-levels 10000)
 
-;----------------- DRIVING -----------------
+;----------------- DRIVING ----------------- 
 
 (p drive*attend-near
     =goal>
@@ -111,7 +113,7 @@
         time =time
         ;fthw =fthw
         ;v =v
-        done t
+        done t 
     =imaginal>
     +visual>
         isa move-attention
@@ -177,14 +179,6 @@
         fkind2 =fkind
         ;fthw2 =fthw
         time2 =time
-        ;+visual-location>
-        ;        isa visual-location
-        ;kind speedsign
-        ;:attended nil
-        ;   +visual-location>
-        ;        isa visual-location
-        ;        kind speedsign
-        ;      :attended new
 )
 
 (p drive*loop-not-stable
@@ -211,18 +205,6 @@
         fkind2 =fkind
         ;fthw2 =fthw
         time2 =time
-        ;+visual-location>
-        ;        isa visual-location      
-        ;        kind instructions
-        ;:attended new
-        ; +visual-location>
-        ;isa visual-location
-        ;kind speesign
-        ;:attended nil
-        ;   +visual-location>
-        ;        isa visual-location
-        ;        kind speedsign
-        ;      :attended new
 )
 
 (p drive*reset
@@ -257,23 +239,28 @@
         ;create an empty imaginal buffer
     =goal>
         isa nback
-        status start
+        status start        
     ?imaginal>
         state free
 ==>
     =goal>
-        status noticeIn
+        status notice
         num 0
         nr 0
         rehearsal f
+        ;   ntask 2		;for testing without instructions
+        ;needsigns 3		;; ^^
     +imaginal>
         isa nback-state
         nbackspeed 60
         1back 0
-    +visual-location>
-        kind instructions
-        :attended nil
+        cid 0
+        ;+visual-location>
+        ;isa visual-location
+        ;kind near   
 )
+
+;; ----------INSTRUCTIONS------------------------------------------------------
 
 (p notice-instructions
     =goal>
@@ -283,15 +270,13 @@
         isa visual-location
         kind instructions
         :attended nil    
-    ?visual>
-        state free
 ==>      
     =goal>
         isa nback
         status processInstructions
     +visual>
         isa move-attention
-        screen-pos =visual-location 
+        screen-pos =visual-location
 )
 
 (p interrupt-and-notice-instructions
@@ -319,15 +304,11 @@
     =goal>
         isa nback
         status processInstructions
-    =imaginal>
-        isa nback-state
-        nbackspeed =speed
     =visual>
-        isa instructions
+        isa instructions 
         value =nback
 ==>
-    !bind! =res (get-signsneeded)
-    !bind! =cid (get-chunk-id)
+    !bind! =signs (+ =nback 1)
     !bind! =num (reset-num-sign)
     !bind! =nr (reset-rehearsal) 
     =goal>
@@ -336,34 +317,11 @@
         num =num
         nr =nr
         ntask =nback
-        needsigns =res   
-    -imaginal>
-    +imaginal>
-        isa nback-state
-        1back =cid 
-        nbackspeed =speed 
-    +visual-location>   
-        isa visual-location
-        kind speedsign
-        :attended nil
+        needsigns =signs
 )
-; temporary, not necessary if it would just get the first instructions
-(p notice-instructions-from-javaside
-    =goal>
-        isa nback
-        status noticeIn
-==>
-    !bind! =numb (get-nback)
-    !bind! =res (get-signsneeded)
-    =goal>
-        isa nback
-        status notice		;; sixty/notice
-        ntask =numb
-        needsigns =res
-    +visual-location>
-        isa visual-location
-        kind near
-)
+
+
+;; --------------------- SPEED SIGN----------------------------
 
 (p notice-sign
     =goal>
@@ -371,8 +329,8 @@
         status notice
     =visual-location>
         isa visual-location
-        kind speedsign
         :attended nil
+        kind speedsign
     ?visual>
         state free
 ==>
@@ -427,8 +385,11 @@
     =visual>
         isa speedsign
         value =tlimit
-    ?retrieval>
-        buffer empty
+        ; ?retrieval>
+        ; buffer empty
+    =imaginal>
+        isa nback-state
+        nbackspeed =something
 ==>
     !bind! =cid (get-chunk-id)
     !bind! =num (get-num-sign)
@@ -486,6 +447,7 @@
         id =1back
 )
 
+
 ;----------------- REHEARSAL* ---------------------------------------
 
 (p nback-start-rehearsal
@@ -495,9 +457,6 @@
         < nr 3		;; number of rehearsals
         > num 0
         rehearsal t
-        ;    =visual-location>
-        ;      isa visual-location
-        ; kind speedsign
     =imaginal>
         isa nback-state
         1back =1back
@@ -510,10 +469,6 @@
     +retrieval>
         isa nback-state
         id =1back
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-0back*
@@ -534,10 +489,6 @@
         status notice
     =retrieval>
     -retrieval>
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-1back*
@@ -558,10 +509,6 @@
         status notice
     =retrieval>
     -retrieval>
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-2back*
@@ -582,10 +529,6 @@
         status notice
     =retrieval>
     -retrieval>
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-3back*
@@ -606,10 +549,6 @@
         status notice
     =retrieval>
     -retrieval>
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 ;; no 4* because that follows the remember path
@@ -636,10 +575,6 @@
     +retrieval>
         isa nback-state
         id =1back    
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-0back-and-stop
@@ -658,10 +593,6 @@
         status notice
     =retrieval>
     -retrieval>
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-1back
@@ -682,10 +613,6 @@
     +retrieval>
         isa nback-state
         id =1back
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-1back-and-stop
@@ -704,10 +631,6 @@
         status notice
     =retrieval>
     -retrieval>
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-2back
@@ -728,10 +651,6 @@
     +retrieval>
         isa nback-state
         id =1back
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-2back-and-stop
@@ -751,10 +670,6 @@
     +retrieval>
         isa nback-state
         id =1back
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-3back
@@ -775,10 +690,6 @@
     +retrieval>
         isa nback-state
         id =1back
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-signs-3back-and-stop
@@ -798,10 +709,6 @@
     +retrieval>
         isa nback-state
         id =1back
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 (p nback-rehearse-sign-4back
@@ -821,10 +728,6 @@
         status notice
     =retrieval>
     -retrieval>
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
 ;;----------------------REMEMBER------------------------------------------
@@ -993,13 +896,11 @@
     =goal>
         status notice
         rehearsal f
-        ;  +visual-location> 
-        ;isa visual-location
-        ;kind speedsign
-        ;:attended new
 )
 
+
 (spp :u 100)
+
 
 (set-similarities
     
