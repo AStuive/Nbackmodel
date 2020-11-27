@@ -193,7 +193,6 @@ public class Vision extends Module {
 					//System.out.println("1"); 
 						Chunk curvisloc = model.getBuffers().get(Symbol.visloc);
 						//System.out.println("2");
-						System.out.println("is null? : " + (curvisloc.get(Symbol.screenx).toDouble()) + "2\n");	// not null
 						double sx = curvisloc.get(Symbol.screenx).toDouble();		// this crashes
 						//System.out.println("3");
 						double sy = curvisloc.get(Symbol.screeny).toDouble();

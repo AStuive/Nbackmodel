@@ -34,7 +34,7 @@ public class Road extends Driving
 		Segment (double a1, double a2, double a3, double a4, double a5, double a6)
 		{
 			left = new Position (a1, a2);
-			middle = new Position (a3, a4);		// visual world, coordinate = screen	
+			middle = new Position (a3, a4);		// position = visual world, coordinate = screen	
 			right = new Position (a5, a6);
 
 			h = new Position (right.x - left.x, right.z - left.z);
@@ -405,7 +405,9 @@ public class Road extends Driving
 		g.fillOval(im1.x+12, im1.y-48, 16, 16);
 		g.setColor(Color.black);
 		g.drawString(Driving.currentLimit, im1.x+13, im1.y-35);
+
 	}
+	
 	
 	void drawInstructions(Graphics g, Env env)
 	{

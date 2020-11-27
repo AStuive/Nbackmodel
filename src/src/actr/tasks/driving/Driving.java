@@ -27,7 +27,7 @@ public class Driving extends actr.task.Task
 	static Simulator simulator = null;
 
 	Simulation simulation;
-	JLabel nearLabel, carLabel, speedsign, instructions, warning, speedometer;
+	JLabel nearLabel, farLabel, speedsign, instructions, warning, speedometer;
 
 	final double scale = .6; // .85
 	final double steerFactor_dfa = (16 * scale);
@@ -64,13 +64,15 @@ public class Driving extends actr.task.Task
 	int rehearsal_count = 0;
 	static String imaginedSpeedlimit = "";
 	List<String> output = new ArrayList<String>();	
-	int tickRange = 5; 
-
+	double acceptableSpeedDiff = 2.5; 
+	double initialTime = 0; 
+	boolean changedAccelBrake = false; 
+	
 	public Driving ()
 	{
 		super ();
 		nearLabel = new JLabel (".");
-		carLabel = new JLabel ("X");
+		farLabel = new JLabel ("X");
 		speedsign = new JLabel ("*");
 		instructions = new JLabel (",");
 		warning = new JLabel (";");
@@ -98,9 +100,9 @@ public class Driving extends actr.task.Task
 			add (nearLabel);
 			nearLabel.setSize (20, 20);
 			nearLabel.setLocation (250, 250);
-			add (carLabel);
-			carLabel.setSize (20, 20);
-			carLabel.setLocation (250, 250);
+			add (farLabel);
+			farLabel.setSize (20, 20);
+			farLabel.setLocation (250, 250);
 			add (speedsign);
 			speedsign.setSize (20, 20);
 			speedsign.setLocation (250, 250);
@@ -116,7 +118,7 @@ public class Driving extends actr.task.Task
 		}
 
 		getModel().runCommand ("(set-visual-frequency near .1)");
-		getModel().runCommand ("(set-visual-frequency car .1)");
+		getModel().runCommand ("(set-visual-frequency far .1)");
 
 		//they don't reset otherwise if you run the model multiple times in a row
 		accelBrake = 0;
@@ -125,7 +127,7 @@ public class Driving extends actr.task.Task
 		currentLimit = "60";
 
 		getModel().getVision().addVisual ("near", "near", "near", nearLabel.getX(), nearLabel.getY(), 1, 1, 10);
-		getModel().getVision().addVisual ("car", "car", "car", carLabel.getX(), carLabel.getY(), 1, 1, 100);
+		getModel().getVision().addVisual ("far", "far", "far", farLabel.getX(), farLabel.getY(), 1, 1, 100);
 		getModel().getVision().addVisual ("speedometer", "speedometer", "speedometer", 150, 315, 1, 1, 1);
 		addPeriodicUpdate (Env.sampleTime);
 
@@ -138,7 +140,9 @@ public class Driving extends actr.task.Task
 			simulation.env.time = time - startTime; 
 			updateVisuals();
 			if(simulation.env.time>10) //only start after 10s
+			{
 				updateSign(simulation.env.time);
+			}
 			updateInstructions(simulation.env.time);			// $$$$$$$$$$$$$$$$$$$$$$
 			simulation.update();	
 			updateSpeedometer();
@@ -182,7 +186,7 @@ public class Driving extends actr.task.Task
 		//add instructions
 		// now at 3 seconds and every 60 sec		x5 seconds works as long as signs are there every 20 sec
 		
-		if(!instructionsSeen && ((time > 5 && time < 7) || (time > 1 && time%35 < 1)))		// instr at 10s?
+		if(!instructionsSeen && ((time > 5 && time < 7) || (time > 1 && time%60 < 1)))		// instr at 10s?
 		{
 			instructionsSeen = true;
 			currentNBack = nBack_list[nback_count];
@@ -203,9 +207,8 @@ public class Driving extends actr.task.Task
 		String[] speedlimits = {"60", "70", "80", "90", "100", "110", "120", "130", "140"};		
 		Env env = simulation.env;
 		Simcar simcar = simulation.env.simcar;
-					
 		// time%20 before!			
-		if((int)time%10 == 0 && signSeen == false && (speedI < speedlimits.length) )
+		if((int)time%20 == 0 && !signSeen && (speedI < speedlimits.length) )
 		{
 			if (env.simcar.nearPoint != null)
 			{		
@@ -219,17 +222,15 @@ public class Driving extends actr.task.Task
 				Position newLoc = Road.location(env.simcar.fracIndex + 20 , 3);
 				newLoc.y = 0.0;
 				signPos = env.world2image(newLoc);
-								getModel().getVision().addVisual ("speedsign", "speedsign", currentLimit, (int)signPos.x, (int)signPos.y, 1, 1, 100);
+				signSeen = true;
+				getModel().getVision().addVisual ("speedsign", "speedsign", currentLimit, (int)signPos.x, (int)signPos.y, 1, 1, 100);
 				speedsign.setLocation((int)signPos.x, (int)signPos.y);
 				signOnset = time;
-				signSeen = true;
-			}
-		} else if(signSeen && time - signOnset >= 2 && signOnset > 0)
-		{
-			getModel().getVision().removeVisual("speedsign");
-			signSeen = false;
-		// moving the speed sign while it's being shown
-		}  else if ((int)Utilities.mps2mph(Utilities.mph2kph(simcar.speed))	>= 0) { 
+			} else
+				System.out.println("nearpoint = null");
+		// move the speed sign
+		} else if (signSeen && (int)Utilities.mps2mph(Utilities.mph2kph(simcar.speed))	>= 0) 
+		{ 
 			//not the prettiest solution, but for now it works (to prevent it moving at low/zero speeds)
 			signPos.x += 5;
 			signPos.y += 3;
@@ -246,7 +247,14 @@ public class Driving extends actr.task.Task
 			120		33.33333333		3
 			130		36.11111111		2.769230769
 			  */
-		} 
+		} else if(signSeen && (time - signOnset >= 2) && signOnset > 0)
+		{
+			System.out.println("remove sign");
+			getModel().getVision().removeVisual("speedsign");
+			signSeen = false;
+			
+		// moving the speed sign while it's being shown
+		}   
 	}
 
 	void updateSpeedometer()
@@ -271,9 +279,9 @@ public class Driving extends actr.task.Task
 			else
 			{
 				nearLabel.setLocation (cn.x, cn.y);
-				carLabel.setLocation (cc.x, cc.y);
+				farLabel.setLocation (cc.x, cc.y);
 				getModel().getVision().moveVisual ("near", cn.x, cn.y);
-				getModel().getVision().moveVisual ("car", cc.x, cc.y);
+				getModel().getVision().moveVisual ("far", cc.x, cc.y);
 				//				speed = env.simcar.speed;
 
 			}
@@ -318,16 +326,19 @@ public class Driving extends actr.task.Task
 		simcar.brake = (accelBrake < 0) ? -accelBrake : 0;
 	}
 
-	void keepLimit(double tlimit)
-	{		
-		imaginedSpeedlimit = Integer.toString((int)tlimit); //for sampling
+	void keepLimit(double slimit)
+	{	// speedometer value instead of simcar.speed
+		imaginedSpeedlimit = Integer.toString((int)slimit); //for sampling
 		Simcar simcar = simulation.env.simcar;
 		double speed = simcar.speed;
-		tlimit = Utilities.mph2mps(Utilities.kph2mph(tlimit));
-		double diff = (tlimit - speed);
+		slimit = Utilities.mph2mps(Utilities.kph2mph(slimit));
+		double diff = (slimit - speed);
+		initialTime = simulation.env.time; 
 		double time = simulation.env.time - startTime;
 
 		//display warning if the speed limit is not kept (method says 6 seconds (3 before and after))
+		
+		
 		
 		// time-signOnset before! 
 		if( Math.abs(diff)>1.39 && !warningSeen && signOnset != 0 && (time - signOnset) > 3) //1.39 m/s is roughly 5 km/h
@@ -343,25 +354,63 @@ public class Driving extends actr.task.Task
 			warningSeen = false;
 		}
 
-		if (Math.abs(tlimit - speed) > 0)
+		if (Math.abs(diff) > 0)
 		{
+			System.out.println("accelbrake before: " + accelBrake); 
 			//			double dacc = (dthw * accelFactor_dthw 1.2)
 			//			+ (dt * (fthw - thwFollow 1.0) * accelFactor_thw 0.4);
-			if(diff>1.0) {
-				double dacc = (diff*10 * 1.2) + (0.25 * diff * 0.4);
+			if(diff > 1) {
+				double dacc = (diff/10); // (diff*10 * 1.2) + (0.25 * diff * 0.4)
+				System.out.println("dacc: " + dacc); 
 				accelBrake += dacc;
-				accelBrake = minSigned (accelBrake, 1.5); // 1.0
-			}else
+				accelBrake = minSigned (accelBrake, 1.0); // 1.5
+			} else
 			{
-				double dacc = (diff * 1.2) + (0.25 * diff * 0.4);
+				double dacc = (diff/10); 		//(diff* 1.2) + (0.25 * diff * 0.4)
+				System.out.println("dacc: " + dacc); 
 				accelBrake += dacc;
 				accelBrake = minSigned (accelBrake, 1.0);
 			}
+			
+					
+			System.out.println("accelbrake after: " + accelBrake); 
+			changedAccelBrake = true; 
 		}
+		/*
+		    0.1	 16 (too low)
+		    0.15 25 (too low)
+			0.2  32 	
+			0.25 40		
+			0.3	 48
+			0.35 56
+			0.4	 64		
+			0.45 71
+			0.5	 78		
+			0.55 85
+			0.6  92
+			0.65 99
+			0.7  105
+			0.75 112
+			0.8  118
+			0.85 124
+			0.9  130
+			0.95 136
+			1.0  141
+			https://elsenaju.eu/Calculator/online-curve-fit.htm
+			polynomial: -0.422 + 167.227x - 11.371x^2 - 21.874x^3 + 7.699x^4 [best fitting of all?]
+			
+			https://planetcalc.com/5992/
+			quadratic regression: -32.0802x^2 + 174.5864x - 1.1754 [bestbest fitting, error 0.4667]
+			cubic regression: -5.0036x^3 - 23.8243x^2 + 170.7187x - 0.7131 [best fitting error 0.4749]
+			
+		 */
+		//accelBrake = 0.2; 
+			
 		simcar.accelerator = (accelBrake >= 0) ? accelBrake : 0;
 		simcar.brake = (accelBrake < 0) ? -accelBrake : 0;
+		//checkAccelBrake(); 
 	}
-
+	
 	boolean isCarStable (double na, double nva, double fva)
 	{
 		double f = 2.5;		// is this lane width? 
@@ -387,7 +436,7 @@ public class Driving extends actr.task.Task
 		if (cmd.equals ("do-steer"))
 		{
 			double na = Double.valueOf (it.next());
-			double dna = Double.valueOf (it.next());
+			double dna = Double.valueOf (it.next()); // crash
 			double dfa = Double.valueOf (it.next());
 			double dt = Double.valueOf (it.next());
 			doSteer (na, dna, dfa, dt);
@@ -480,24 +529,36 @@ public class Driving extends actr.task.Task
 			// ADDED for timing 
 			else if (cmd.equals("eval-speed"))
 			{
-				int rnd = 0; 
-		
-					while (rnd == 0)
-						rnd = new Random().nextInt(3);		// in paper stable 0.07 rad (1/4 lane) = 4.01 degrees
-					// https://www.calculator.net/right-triangle-calculator.html?av=&alphav=0.07&alphaunit=r&bv=10&betav=&betaunit=d&cv=&hv=&areav=&perimeterv=&x=0&y=0
-				//}
-				return rnd; 
+				
+				double speedometerSpeed = Double.valueOf (it.next());
+				double imaginedSpeed = Double.valueOf (it.next());
+				double diff = Math.abs(speedometerSpeed - imaginedSpeed); 
+				System.out.println("speedo: " + speedometerSpeed + " imagined: " + imaginedSpeed); 
+				
+				if (diff <= acceptableSpeedDiff)	// 2.5 atm
+					return 0;
+				else if (diff > acceptableSpeedDiff && diff <= 2*acceptableSpeedDiff)
+					return 1; 
+				else if (diff > 2*acceptableSpeedDiff)
+					return 2; 
+				else 
+					return 0; 
+				
+				// in paper stable 0.07 rad (1/4 lane) = 4.01 degrees
+					// https://www.calculator.net/right-triangle-calculator.html?av=&alphav=0.07&alphaunit=r&bv=10&betav=&betaunit=d&cv=&hv=&areav=&perimeterv=&x=0&y=0 
 				// 0 = early, 1 = safe, 2 = late
 				
 			// ADDED for range of similar experiences
-			} else if (cmd.equals("minTick"))
+			} else if (cmd.equals("get-mintick"))
 			{
 				double minT = Double.valueOf (it.next());
-				minT -= tickRange; 
-				System.out.println("trying to retrieve experience between (" + minT + ", " + (minT + 2*tickRange) + ")\n");				
-				return (minT < 0) ? 0: minT; 	
+				double deduction = Double.valueOf (it.next());
+				minT -= deduction; 
+				return (minT < 0) ? 0: minT; 
+				
 			} 
 			else return 0;
+			
 		}
 		catch (Exception e)
 		{
