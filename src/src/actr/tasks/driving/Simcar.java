@@ -6,6 +6,9 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
+import java.util.Random;
+
+import actr.model.Model;			//
 
 /**
  * The driver's own vehicle and its controls.
@@ -23,6 +26,13 @@ public class Simcar extends Vehicle
 	Position nearPoint;
 	Position farPoint;
 	Position carPoint;
+	double distanceDriven; 
+	double prevTime = 0;
+	double curTime; 
+	double prevDist = 0; 
+	double curDist; 
+	
+	Env env; 
 
 	public Simcar (Driver driver, Env env)
 	{
@@ -34,6 +44,8 @@ public class Simcar extends Vehicle
 		accelerator = 0;
 		brake = 0;
 		speed = 0;
+		distanceDriven = 0; 
+		this.env = env; 
 	}
 
 	int order = 6;
@@ -62,7 +74,7 @@ public class Simcar extends Vehicle
 	double car_steer;
 	double car_speed;
 	double car_ke;
-
+	
 	void derivs (double y[], double dydx[])
 	{
 		double phi = y[1];
@@ -96,6 +108,8 @@ public class Simcar extends Vehicle
 		dydx[4] = pengine - fdrag * u - fbrake * u;
 		dydx[5] = u * Math.cos(phi);
 		dydx[6] = u * Math.sin(phi);
+		
+		addDistance(env); 
 	}
 
 	void rk4 (int n, double x, double h)
@@ -219,6 +233,8 @@ public class Simcar extends Vehicle
 
 		fracIndex = newi + fracdelta;
 		roadIndex = newi;
+		
+		// addDistance(env); 
 	}
 
 	void update (Env env)
@@ -265,9 +281,19 @@ public class Simcar extends Vehicle
 		}
 	}
 	
+	void addDistance(Env env)
+	{	
+		curTime = env.time;
+		double dTime = curTime - prevTime;
+		distanceDriven += (dTime * speed); 
+		prevTime = curTime; 				
+		//System.out.println("\t\ttime: " + env.time + " driven distance: " + distanceDriven); 
+	}
 
-
-
+	double getDistance() 
+	{
+		return distanceDriven; 
+	}
 
 	double devscale = .0015;
 	double devx = -.7;

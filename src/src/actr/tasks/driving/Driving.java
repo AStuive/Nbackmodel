@@ -1,6 +1,9 @@
 package actr.tasks.driving;
 
 import java.awt.BorderLayout;
+import java.io.*;
+import java.io.File; 
+
 // import java.util.Arrays;
 // import java.io.BufferedWriter;
 // import java.io.FileWriter;
@@ -10,7 +13,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
-
 import javax.swing.JLabel;
 
 import actr.model.Model;
@@ -65,8 +67,15 @@ public class Driving extends actr.task.Task
 	static String imaginedSpeedlimit = "";
 	List<String> output = new ArrayList<String>();	
 	double acceptableSpeedDiff = 2.5; 
-	double initialTime = 0; 
-	boolean changedAccelBrake = false; 
+	double mentalSpeed = 16.66666667; 
+	double roughSpeed; 
+	double prevTime = 0; 
+	double curTime; 
+	double prevDist = 0; 
+	double curDist; 
+	
+	boolean newCSV = true; 
+	
 	
 	public Driving ()
 	{
@@ -82,7 +91,7 @@ public class Driving extends actr.task.Task
 	public void start ()
 	{
 		simulation = new Simulation (getModel());
-
+		
 		if (getModel().getRealTime())
 		{
 			setLayout (new BorderLayout());
@@ -94,6 +103,7 @@ public class Driving extends actr.task.Task
 			signSeen = false; 
 			instructionsOnset = -5;
 			instructionsSeen = false; 
+			mentalSpeed = 16.666667; 
 		}
 		else
 		{
@@ -130,7 +140,8 @@ public class Driving extends actr.task.Task
 		getModel().getVision().addVisual ("far", "far", "far", farLabel.getX(), farLabel.getY(), 1, 1, 100);
 		getModel().getVision().addVisual ("speedometer", "speedometer", "speedometer", 150, 315, 1, 1, 1);
 		addPeriodicUpdate (Env.sampleTime);
-
+		
+		
 	}
 
 	public void update (double time)
@@ -207,8 +218,9 @@ public class Driving extends actr.task.Task
 		String[] speedlimits = {"60", "70", "80", "90", "100", "110", "120", "130", "140"};		
 		Env env = simulation.env;
 		Simcar simcar = simulation.env.simcar;
+		
 		// time%20 before!			
-		if((int)time%20 == 0 && !signSeen && (speedI < speedlimits.length) )
+		if((int)time%10 == 0 && !signSeen && (speedI < speedlimits.length) )
 		{
 			if (env.simcar.nearPoint != null)
 			{		
@@ -219,6 +231,13 @@ public class Driving extends actr.task.Task
 					int rnd = new Random().nextInt(speedlimits.length);
 					currentLimit = speedlimits[rnd];
 				} 
+				
+				if (Math.abs(Integer.parseInt(currentLimit) - Integer.parseInt(previousLimit)) >= 10) 
+				{
+					//newLimit = true; 					
+					mentalSpeed = Utilities.mph2mps(Utilities.kph2mph(Integer.parseInt(currentLimit)));
+				}
+				 				// 
 				Position newLoc = Road.location(env.simcar.fracIndex + 20 , 3);
 				newLoc.y = 0.0;
 				signPos = env.world2image(newLoc);
@@ -251,6 +270,7 @@ public class Driving extends actr.task.Task
 		{
 			System.out.println("remove sign");
 			getModel().getVision().removeVisual("speedsign");
+			signPos = null; 
 			signSeen = false;
 			
 		// moving the speed sign while it's being shown
@@ -326,19 +346,27 @@ public class Driving extends actr.task.Task
 		simcar.brake = (accelBrake < 0) ? -accelBrake : 0;
 	}
 
+	/* the speedometer check is onyl used to update the mental representation of what speed we're driving at. 
+	 * the original process far production is still the one responsible for maintaining the speed, 
+	 * the only difference is that is used the mental representation of the speed to accelerate/brake
+	 * this mental representation is mainyl based on the distance travelled between far point checks, 
+	 * and gets real accuracy when you check the speedometer. 
+	 * the distance between far points is accurate, so add some normal distribution noise around it.  */
+	
 	void keepLimit(double slimit)
 	{	// speedometer value instead of simcar.speed
 		imaginedSpeedlimit = Integer.toString((int)slimit); //for sampling
 		Simcar simcar = simulation.env.simcar;
-		double speed = simcar.speed;
+		double speed =  mentalSpeed; 		// simcar.speed
 		slimit = Utilities.mph2mps(Utilities.kph2mph(slimit));
+		System.out.println("simcar speed: " + simcar.speed + " mental: " + mentalSpeed + " limit: " + slimit); 
+		
+		// simcar speed, speed limits and mental speed = mps	speedo= kph
+		
 		double diff = (slimit - speed);
-		initialTime = simulation.env.time; 
 		double time = simulation.env.time - startTime;
 
 		//display warning if the speed limit is not kept (method says 6 seconds (3 before and after))
-		
-		
 		
 		// time-signOnset before! 
 		if( Math.abs(diff)>1.39 && !warningSeen && signOnset != 0 && (time - signOnset) > 3) //1.39 m/s is roughly 5 km/h
@@ -353,64 +381,55 @@ public class Driving extends actr.task.Task
 			//warningOnset = time;
 			warningSeen = false;
 		}
-
+			
 		if (Math.abs(diff) > 0)
 		{
-			System.out.println("accelbrake before: " + accelBrake); 
 			//			double dacc = (dthw * accelFactor_dthw 1.2)
 			//			+ (dt * (fthw - thwFollow 1.0) * accelFactor_thw 0.4);
-			if(diff > 1) {
-				double dacc = (diff/10); // (diff*10 * 1.2) + (0.25 * diff * 0.4)
-				System.out.println("dacc: " + dacc); 
+			
+			if(diff > 2) {	// 1
+				double dacc = (diff * 1.2) + (0.25 * diff * 0.4); // (diff*10 * 1.2) + (0.25 * diff * 0.4) braking too hard
 				accelBrake += dacc;
 				accelBrake = minSigned (accelBrake, 1.0); // 1.5
 			} else
 			{
-				double dacc = (diff/10); 		//(diff* 1.2) + (0.25 * diff * 0.4)
-				System.out.println("dacc: " + dacc); 
+				double dacc = (diff* 1.2) + (0.25 * diff * 0.4);
 				accelBrake += dacc;
-				accelBrake = minSigned (accelBrake, 1.0);
-			}
-			
-					
-			System.out.println("accelbrake after: " + accelBrake); 
-			changedAccelBrake = true; 
+				accelBrake = minSigned (accelBrake, 0.20);	// 0.65
+			}	
 		}
-		/*
-		    0.1	 16 (too low)
-		    0.15 25 (too low)
-			0.2  32 	
-			0.25 40		
-			0.3	 48
-			0.35 56
-			0.4	 64		
-			0.45 71
-			0.5	 78		
-			0.55 85
-			0.6  92
-			0.65 99
-			0.7  105
-			0.75 112
-			0.8  118
-			0.85 124
-			0.9  130
-			0.95 136
-			1.0  141
-			https://elsenaju.eu/Calculator/online-curve-fit.htm
-			polynomial: -0.422 + 167.227x - 11.371x^2 - 21.874x^3 + 7.699x^4 [best fitting of all?]
-			
-			https://planetcalc.com/5992/
-			quadratic regression: -32.0802x^2 + 174.5864x - 1.1754 [bestbest fitting, error 0.4667]
-			cubic regression: -5.0036x^3 - 23.8243x^2 + 170.7187x - 0.7131 [best fitting error 0.4749]
-			
-		 */
-		//accelBrake = 0.2; 
-			
 		simcar.accelerator = (accelBrake >= 0) ? accelBrake : 0;
 		simcar.brake = (accelBrake < 0) ? -accelBrake : 0;
-		//checkAccelBrake(); 
+	
+		if (accelBrake < 0)
+			System.out.println("    braking! with " + simcar.brake + " force");
+		
+		}
+	
+	void makeCSVwithSpeeds(double real, double rough, double mental, double limit)
+	{
+		try {
+	        FileWriter fw = new FileWriter("speeds.csv", true);
+	        BufferedWriter bw = new BufferedWriter(fw);
+	        PrintWriter pw = new PrintWriter(bw);	
+	        if (newCSV)
+	        {
+	        	pw.println("Real, Rough, Mental, Limit, Real-Rough");
+	        	newCSV = false; 
+	        }
+	        
+	        pw.println(real + "," + rough + "," + mental + "," + limit + "," + (real-rough));
+	        pw.flush();
+	        pw.close();
+
+	    } catch (FileNotFoundException e) {
+	        System.out.println(e.getMessage());
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
 	}
 	
+		
 	boolean isCarStable (double na, double nva, double fva)
 	{
 		double f = 2.5;		// is this lane width? 
@@ -419,7 +438,7 @@ public class Driving extends actr.task.Task
 	
 	// na = near point, fva = far?? nva = ??		velocity??
 
-	double image2angle (double x, double d)		// x = near angle, d = distance
+	double image2angle (double x, double d)		// x = near/far angle, d = distance
 	{
 		Env env = simulation.env;
 		double px = env.simcar.p.x + (env.simcar.h.x * d);
@@ -458,7 +477,30 @@ public class Driving extends actr.task.Task
 		else if (cmd.equals ("placeholder"))
 		{
 			//
-		} 
+		} else if (cmd.equals("set-rough-speed"))
+		{
+			curTime = getModel().getTime(); 			
+			Simcar simcar = simulation.env.simcar;
+			curDist = simcar.getDistance(); 
+			
+			double diffDist = curDist - prevDist; 
+			roughSpeed = diffDist / (curTime - prevTime); // simcar.speed; 			
+			System.out.println("roughSpeed: " + roughSpeed + " vs actual speed: " + simcar.speed);
+			
+			Random r = new Random(); 
+			double noise = r.nextGaussian() * 0.5;
+			mentalSpeed = roughSpeed += noise; 
+			
+			prevTime = curTime; 
+			prevDist = curDist; 
+			makeCSVwithSpeeds(simcar.speed, roughSpeed, mentalSpeed, Utilities.mph2mps(Utilities.kph2mph(Integer.parseInt(currentLimit))));
+			
+			//System.out.println("mentalSpeed: " + mentalSpeed + " vs actual speed: " + simcar.speed);			
+		} else if (cmd.equals("set-speedo-speed"))
+		{
+			double speedoSpeed = Double.valueOf (it.next());
+			mentalSpeed = Utilities.mph2mps(Utilities.kph2mph(speedoSpeed)); 
+		}
 	}
 
 	public boolean evalCondition (Iterator<String> it)
@@ -484,7 +526,7 @@ public class Driving extends actr.task.Task
 			String cmd = it.next();
 			if (cmd.equals ("image->angle"))
 			{
-				double x = Double.valueOf (it.next());		// near point
+				double x = Double.valueOf (it.next());		// near/far point
 				double d = Double.valueOf (it.next());		// distance
 				return image2angle (x, d);
 			}
@@ -494,6 +536,7 @@ public class Driving extends actr.task.Task
 				double fd = Double.valueOf (it.next());
 				double v = Double.valueOf (it.next());
 				double thw = (v==0) ? 4.0 : fd/v;
+				System.out.println("fthw: " + thw); 
 				return Math.min (thw, 4.0);
 			}
 			else if (cmd.equals ("get-velocity")) return speed;
@@ -529,25 +572,24 @@ public class Driving extends actr.task.Task
 			// ADDED for timing 
 			else if (cmd.equals("eval-speed"))
 			{
-				
+				// 0 = early, 1 = safe, 2 = late
 				double speedometerSpeed = Double.valueOf (it.next());
 				double imaginedSpeed = Double.valueOf (it.next());
 				double diff = Math.abs(speedometerSpeed - imaginedSpeed); 
-				System.out.println("speedo: " + speedometerSpeed + " imagined: " + imaginedSpeed); 
+				System.out.println("\tspeedo: " + speedometerSpeed + "(" + String.format("%.2f", Utilities.mph2mps(Utilities.kph2mph(speedometerSpeed))) + ") "+ " imagined: " + imaginedSpeed + "(" + String.format("%.2f", Utilities.mph2mps(Utilities.kph2mph(imaginedSpeed))) + ")"); 
 				
 				if (diff <= acceptableSpeedDiff)	// 2.5 atm
-					return 0;
+					return 0;	// early
 				else if (diff > acceptableSpeedDiff && diff <= 2*acceptableSpeedDiff)
-					return 1; 
+					return 1; 	// safe
 				else if (diff > 2*acceptableSpeedDiff)
-					return 2; 
+					return 2;	// late 
 				else 
 					return 0; 
 				
 				// in paper stable 0.07 rad (1/4 lane) = 4.01 degrees
-					// https://www.calculator.net/right-triangle-calculator.html?av=&alphav=0.07&alphaunit=r&bv=10&betav=&betaunit=d&cv=&hv=&areav=&perimeterv=&x=0&y=0 
-				// 0 = early, 1 = safe, 2 = late
-				
+				// https://www.calculator.net/right-triangle-calculator.html?av=&alphav=0.07&alphaunit=r&bv=10&betav=&betaunit=d&cv=&hv=&areav=&perimeterv=&x=0&y=0 
+	
 			// ADDED for range of similar experiences
 			} else if (cmd.equals("get-mintick"))
 			{
@@ -555,7 +597,6 @@ public class Driving extends actr.task.Task
 				double deduction = Double.valueOf (it.next());
 				minT -= deduction; 
 				return (minT < 0) ? 0: minT; 
-				
 			} 
 			else return 0;
 			

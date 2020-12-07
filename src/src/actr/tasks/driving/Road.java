@@ -396,7 +396,7 @@ public class Road extends Driving
 	{
 		Coordinate im1 = Driving.signPos;
 
-		if (im1 == null) return;
+		if (im1 == null) return;		// null if you don't want to see a speedsign
 		g.setColor(Color.GRAY);
 		g.fillRect(im1.x+18, im1.y-30, 3, 30);		
 		g.setColor(Color.red);
@@ -405,7 +405,6 @@ public class Road extends Driving
 		g.fillOval(im1.x+12, im1.y-48, 16, 16);
 		g.setColor(Color.black);
 		g.drawString(Driving.currentLimit, im1.x+13, im1.y-35);
-
 	}
 	
 	
