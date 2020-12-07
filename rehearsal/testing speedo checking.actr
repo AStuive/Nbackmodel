@@ -76,10 +76,9 @@
         kind far
 )
 
-(p drive*process-far-before-check
+(p drive*process-far
     =goal>
         isa drive
-        attendstart n
         na =na
         fa nil
         na2    =na2
@@ -106,62 +105,12 @@
     !bind! =dt (- =time =time2)
     !bind! =vna (my/ =dna =dt)
     !bind! =vfa (my/ =dfa =dt)
+    !eval! (set-rough-speed) 		;; changed!
         ;!bind! =v (get-velocity)
         ;!bind! =fthw (get-thw =fd =v)
         ;!bind! =dthw (- =fthw =fthw2)
     !eval! (do-steer =na =dna =dfa =dt)
     !eval! (keep-limit =nbackspeed) ; different second one after checking once	
-    =goal>
-        fkind =fkind
-        fa =fa
-        fd =fd
-        vna =vna
-        vfa =vfa
-        time =time
-        ;fthw =fthw
-        ;v =v
-        done t
-    =imaginal>			
-    +visual>
-        isa move-attention
-        screen-pos =visual-location
-)
-
-(p drive*process-far-after-check
-    =goal>
-        isa drive
-        attendstart y
-        na =na
-        fa nil
-        na2    =na2
-        fa2    =fa2
-        fkind2 =fkind
-        ;fthw2  =fthw2
-        time2  =time2
-    =visual-location>
-        isa visual-location
-        kind far 
-        kind =fkind
-        screen-x =fx
-        distance =fd
-    ?visual>
-        state free
-        buffer empty
-    =imaginal>
-        nbackspeed =nbackspeed
-==>
-    !bind! =fa (image->angle =fx =fd)
-    !bind! =time (mp-time)
-    !bind! =dna (- =na =na2)
-    !bind! =dfa (- =fa =fa2)
-    !bind! =dt (- =time =time2)
-    !bind! =vna (my/ =dna =dt)
-    !bind! =vfa (my/ =dfa =dt)
-        ;!bind! =v (get-velocity)
-        ;!bind! =fthw (get-thw =fd =v)
-        ;!bind! =dthw (- =fthw =fthw2)
-    !eval! (do-steer =na =dna =dfa =dt)
-        ; different second one after checking once
     =goal>
         fkind =fkind
         fa =fa
@@ -230,7 +179,7 @@
 ==>
     =goal>
         isa drive
-        status speedo
+        status speedo		;; start speedo loop
         na nil
         fa nil
         na2 =na
@@ -258,7 +207,6 @@
 ==>
     =goal>
         isa drive
-        status speedo
         na nil
         fa nil
         na2 =na
@@ -457,7 +405,7 @@
 
 ;; ------------------------------ATTEND---------------------------
 
-(p speedo*attend-first
+(p speedo*attend-first-time
     =goal>
         isa drive	
         phase attend
@@ -469,8 +417,7 @@
         isa speedometer
         value =value
 ==>
-        ; !bind! =dt (- =time =time2)
-    !eval! (keep-limit =nbackspeed)
+    !eval! (set-speedo-speed =value)
     =goal>
         isa drive        
         phase free
@@ -502,7 +449,7 @@
 ==>
     !bind! =safe (eval-speed =value =speed)
         ;!bind! =dt (- =time =time2)
-    !eval! (keep-limit =speed)    
+    !bind! (set-speed =value)
     =goal>
         isa drive
         status nil
