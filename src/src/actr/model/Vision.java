@@ -184,7 +184,7 @@ public class Vision extends Module {
 		while (it.hasNext()) {
 			VisualObject vo = it.next();
 			//System.out.println(vo.kind);
-			if ((model.getTime() - vo.creationTime) < 0.2 && vo.creationTime != 0) {
+			if ((model.getTime() - vo.creationTime) < 0.3 && vo.creationTime != 0) {
 				if (model.bufferStuffing && vo.attendedTime == 0 && (model.getBuffers().get(Symbol.visloc) == null
 						|| model.getBuffers().get(Symbol.vislocState).get(Symbol.buffer) == Symbol.unrequested)) {
 					double newDist = Utilities.distance(vo.x, vo.y, lastVisLocRequestX, lastVisLocRequestY);

@@ -362,32 +362,61 @@ public class Road extends Driving
 		p.addPoint (newLoc.x, newLoc.y);
 		newLoc = env.world2image (location (ri+distAhead, 1));
 		p.addPoint (newLoc.x, newLoc.y);
-		newLoc = env.world2image (location (ri+distAhead, 3));
+		newLoc = env.world2image (location (ri+distAhead, lanes+1));
 		p.addPoint (newLoc.x, newLoc.y);
-		newLoc = env.world2image (location (ri+3, 3));
+		newLoc = env.world2image (location (ri+3, lanes+1));
 		p.addPoint (newLoc.x, newLoc.y);
 		g.fillPolygon (p);
 
 		long di = 3;
-		int[] lps = {1,2,3,4};
+		int[] lpsN = {1,2,3,4,4};		
+		// normal road = l & mid 3.5m, r 3.75m	construction mid 2.5m r 3.5m
+		// the middle is 71.4% of normal width		right is 100% of MIDDLE width
+		// middle is 2.286
+		double[] lpsC = {1,2,2.286,3,4};
 		Coordinate[] oldLocs;
-		oldLocs = new Coordinate[]{null, null, null, null};
+		oldLocs = new Coordinate[]{null, null, null, null, null};
 		while (di <= distAhead)
 		{
 			g.setColor (Color.white);
-			for (int i=0 ; i<3 ; i++) //changed to 3 and also at the if statement -mh
-			{
-				double lp = lps[i];
+			for (int i=0 ; i<=4 ; i++) //changed to 3 and also at the if statement -mh
+			{	
+				double lp = 0; 
+				if (curBlock == "normal")
+				{
+					lp = lpsN[i];
+					newLoc = env.world2image (location (ri+di, lp));
+				} else 
+				{
+					lp = lpsC[i];
+					newLoc = env.world2image (location (ri+di, lp));
+				}
 				Coordinate oldLoc = oldLocs[i];
-				newLoc = env.world2image (location (ri+di, lp));
-				if (oldLoc!=null && newLoc!=null
-						&& (lp==1 || lp==3 || ((ri+di) % 5 < 2))
-						)
-					g.drawLine (oldLoc.x, oldLoc.y, newLoc.x, newLoc.y);					
+				
+				if (curBlock == "construction")
+				{
+					if (oldLoc!=null && newLoc!=null && (lp != 2 || ((ri+di) % 5 < 2)))
+					{
+						if (lp != 1 && lp != 2)
+							g.setColor (Color.yellow); 
+						g.drawLine (oldLoc.x, oldLoc.y, newLoc.x, newLoc.y);	
+					} 
+					
+				} else if (curBlock == "normal") 
+				{ 
+					if (oldLoc!=null && newLoc!=null && (lp==1 || lp==4 || ((ri+di) % 5 < 2)))
+					{
+						System.out.println("lp: " + lp); 
+						g.setColor (Color.white);
+						g.drawLine (oldLoc.x, oldLoc.y, newLoc.x, newLoc.y);	
+					} 
+				}
 				oldLocs[i] = newLoc;
 			}
-			if (di < 50) di += 1;
-			else if (di < 100) di += 3;
+			if (di < 50) 
+				di += 1;
+			else if (di < 100) 
+				di += 3;	// 3
 			else di += 25;
 		}		
 	}

@@ -108,8 +108,7 @@ public class Simcar extends Vehicle
 		dydx[4] = pengine - fdrag * u - fbrake * u;
 		dydx[5] = u * Math.cos(phi);
 		dydx[6] = u * Math.sin(phi);
-		
-		addDistance(env); 
+		//addDistance(env); 
 	}
 
 	void rk4 (int n, double x, double h)
@@ -233,8 +232,7 @@ public class Simcar extends Vehicle
 
 		fracIndex = newi + fracdelta;
 		roadIndex = newi;
-		
-		// addDistance(env); 
+		addDistance(env); 
 	}
 
 	void update (Env env)
@@ -283,16 +281,18 @@ public class Simcar extends Vehicle
 	
 	void addDistance(Env env)
 	{	
+		//System.out.println("add distance " + env.time); 
 		curTime = env.time;
 		double dTime = curTime - prevTime;
-		distanceDriven += (dTime * speed); 
-		prevTime = curTime; 				
-		//System.out.println("\t\ttime: " + env.time + " driven distance: " + distanceDriven); 
+		if (dTime != 0)
+			distanceDriven += (dTime * speed); 
+		prevTime = curTime; 
+		//System.out.println("\t\ttime: " + env.time + " diffDis: " + ((distanceDriven-fracIndex)+100)); 
 	}
 
 	double getDistance() 
 	{
-		return distanceDriven; 
+		return distanceDriven; // fracIndex - 100; 
 	}
 
 	double devscale = .0015;
