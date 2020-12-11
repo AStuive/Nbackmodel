@@ -448,8 +448,7 @@
         >= ticks =wait ;; new
 ==>
     !bind! =safe (eval-speed =value =speed)
-        ;!bind! =dt (- =time =time2)
-    !bind! (set-speed =value)
+    !eval! (set-speedo-speed =value) 
     =goal>
         isa drive
         status nil
