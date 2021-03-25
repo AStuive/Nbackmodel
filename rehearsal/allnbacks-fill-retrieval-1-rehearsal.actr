@@ -1,0 +1,1247 @@
+(set-task "actr.tasks.driving.Driving")
+
+(sgp
+    :iu 10
+    :bll 0.5
+    :digit-detect-delay .050
+    :digit-recode-delay .250
+    :visual-onset-span 0.3
+    :visual-finst-span 3.0
+    :emma t
+    :v t
+    ;---
+    :rt -0
+    :ans 0.125
+    :mp 11.5		;; partial matching?
+    :lf 0.5
+    ;---
+    :trout t
+    ;:act t
+    ;:brain-imaging nil
+    ;:bout t
+)
+
+(add-dm
+    (goal1 isa drive phase free attendstart n waitUntil 0)
+    (goal2 isa nback status start)    
+)
+(set-all-base-levels 10000)
+
+;----------------- DRIVING ----------------- 
+
+(p drive*attend-near
+    =goal>
+        isa drive
+        na nil
+    ?visual-location> 
+        ;state free
+        buffer empty
+        - buffer requested        
+    ?visual>
+        state free
+        buffer empty
+==>
+    +visual-location>
+        isa visual-location
+        kind near
+)
+
+(p drive*process-near-attend-far
+    =goal>
+        isa drive
+        na nil
+    =visual-location>
+        isa visual-location
+        kind near
+        screen-x =nx
+        screen-y =ny
+        distance =nd
+    ?visual>
+        state free
+        buffer empty
+==>
+    !bind! =na (image->angle =nx =nd)
+    =goal>
+        na =na
+    +visual-location>
+        isa visual-location
+        kind far
+)
+
+(p drive*process-far
+    =goal>
+        isa drive
+        na =na
+        fa nil
+        na2    =na2
+        fa2    =fa2
+        fkind2 =fkind
+        ;fthw2  =fthw2
+        time2  =time2
+    =visual-location>
+        isa visual-location
+        kind far 
+        kind =fkind
+        screen-x =fx
+        distance =fd
+    ?visual>
+        state free
+        buffer empty
+    =imaginal>
+        nbackspeed =nbackspeed
+==>
+    !bind! =fa (image->angle =fx =fd)
+    !bind! =time (mp-time)
+    !bind! =dna (- =na =na2)
+    !bind! =dfa (- =fa =fa2)
+    !bind! =dt (- =time =time2)
+    !bind! =vna (my/ =dna =dt)
+    !bind! =vfa (my/ =dfa =dt)
+        ;!bind! =v (get-velocity)
+        ;!bind! =fthw (get-thw =fd =v)
+        ;!bind! =dthw (- =fthw =fthw2)
+    !eval! (set-rough-speed) 		;; changed!
+    !eval! (do-steer =na =dna =dfa =dt)
+    !eval! (keep-limit =nbackspeed =dt)
+    =goal>
+        fkind =fkind
+        fa =fa
+        fd =fd
+        vna =vna
+        vfa =vfa
+        time =time
+        ;fthw =fthw
+        ;v =v
+        done t 
+    =imaginal>
+    +visual>
+        isa move-attention
+        screen-pos =visual-location
+)
+
+(p drive*process-without-old
+    =goal>
+        isa drive
+        na =na
+        fa nil
+    =visual-location>
+        isa visual-location
+        kind =fkind
+        screen-x =fx
+        distance =fd
+    ?visual>
+        state free
+        buffer empty
+==>
+    !bind! =fa (image->angle =fx =fd)
+    !bind! =v (get-velocity)
+        ;!bind! =fthw (get-thw =fd =v)
+    !bind! =time (mp-time)
+    =goal>
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        ;fthw2 =fthw
+        time2 =time
+    +visual-location>
+        isa visual-location
+        kind near
+)
+(spp drive*process-without-old :u 7)
+
+;--------------
+
+(p drive*loop-stable
+    =goal>
+        isa drive
+        na =na
+        fa =fa
+        vna =vna
+        vfa =vfa
+        fd =fd
+        fkind =fkind
+        ;fthw =fthw
+        time =time
+    =visual>
+        isa far
+    !eval! (is-car-stable =na =vna =vfa)
+==>
+    =goal>
+        status speedo		;; start speedo loop
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        ;fthw2 =fthw
+        time2 =time
+)
+
+(p drive*loop-not-stable
+    =goal>
+        isa drive
+        na =na
+        fa =fa
+        vna =vna
+        vfa =vfa
+        fd =fd
+        fkind =fkind
+        ;fthw =fthw
+        time =time
+    =visual>
+        isa far
+    !eval! (is-car-not-stable =na =vna =vfa)
+==>
+    =goal>
+        ;; status speedo
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        ;fthw2 =fthw
+        time2 =time
+)
+
+(p drive*reset
+    =goal>
+        isa drive
+    ?visual-location>
+        state free
+        - buffer requested
+        - kind speedsign
+        - kind instructions
+    ?visual>
+        state free
+        buffer empty
+==>
+    =goal>
+        na nil
+        fa nil
+        na2 nil
+        fa2 nil
+        fkind2 nil
+        ;fthw2 nil
+        time2 nil
+    +visual-location>
+        isa visual-location
+        kind near
+)
+(spp :u 1)
+
+;--------------------CHECKING SPEEDOMETER--------------------------------
+
+;; speed from speedometer
+
+(p speedo*start-check
+    =goal>
+        isa drive
+        status speedo
+        phase free
+        > time 1
+    =imaginal>
+        isa nback-state
+        nbackspeed =speed
+    ?retrieval>		;; no remembering nback otherwise
+        buffer empty
+==>
+    =goal>
+        isa drive
+        status nil
+        phase trytoretrieve
+    =imaginal>
+    +retrieval>
+        isa speedoexp	
+        ;; retrieve good experience, not ticks
+        ; timing 1
+        ;;speed =speed
+)
+
+(spp speedo*start-check :u 5)	;; higher priority?
+
+; ---------------------------CAN'T RETRIEVE BC OF NBACK -----------------------
+
+(p speedo*just-check
+    =goal>
+        isa drive
+        status trytoretrieve
+    =retrieval>
+        - isa speedoexp
+==> 
+    =goal>
+        isa drive
+        phase attend
+        needvisual y
+    +visual-location>
+        isa visual-location
+        kind speedometer
+)
+
+; ---------------------------RETRIEVAL FAILED -----------------------
+
+(p speedo*retrieval-failure
+    =goal>
+        isa drive
+        phase trytoretrieve
+    ?retrieval>
+        state error
+==> 
+    =goal>
+        isa drive
+        phase attend
+        needvisual y
+    +visual-location>
+        isa visual-location
+        kind speedometer
+    -retrieval>
+)
+
+; ---------------------------RETRIEVAL SUCCESS -----------------------
+
+(p speedo*retrieved-early
+    =goal>
+        isa drive
+        phase trytoretrieve
+    =temporal>
+        ticks =number
+    =retrieval>
+        isa speedoexp
+        ticks =something
+        timing 0
+==>
+    !bind! =wait (+ =number 10)
+    =goal>
+        isa drive
+        phase checkwait
+        waitUntil =wait        
+        needvisual n
+)
+
+(p speedo*retrieved-late
+    =goal>
+        isa drive
+        phase trytoretrieve
+    =retrieval>
+        isa speedoexp
+        ticks =something
+        timing 2
+==>
+    !bind! =wait (get-mintick =something 10)
+    =goal>
+        isa drive
+        phase checkwait
+        waitUntil =wait   
+        needvisual n
+)
+
+(p speedo*retrieved-safe
+    =goal>
+        isa drive
+        phase trytoretrieve
+    =retrieval>
+        isa speedoexp
+        ticks =something
+        timing 1
+==>
+    =goal>
+        isa drive
+        phase checkwait
+        waitUntil =something
+        needvisual n
+)
+
+; ---------------------------GET VISUALS-----------------------
+
+    ;(p speedo*get-visual-location-again-wrong-kind
+    ;=goal>
+    ;isa drive
+    ;phase attend
+    ;needvisual y
+    ;=visual-location> 
+    ;- kind speedometer
+    ;state free
+    ;?visual>
+    ;buffer empty
+    ;?retrieval>		;; no remembering nback otherwise
+    ;state free
+    ;buffer empty
+    ;==>
+    ;=goal>
+    ;isa drive 
+    ;needvisual y
+    ;+visual-location>
+    ;isa visual-location 
+    ;kind speedometer
+    ;)
+
+(p speedo*get-visual-location-again-empty
+    =goal>
+        isa drive
+        phase attend
+        needvisual y
+    ?visual-location> 
+        buffer empty
+    ?visual>
+        buffer empty
+    ?retrieval>		;; no remembering nback otherwise
+        state free
+        buffer empty
+==>
+    =goal>
+        isa drive 
+        needvisual y
+    +visual-location>
+        isa visual-location 
+        kind speedometer
+)
+
+(p speedo*get-visual-again
+    =goal>
+        isa drive
+        phase attend        
+        needvisual y
+    =visual-location>
+        isa visual-location 
+        kind speedometer
+    ?visual>
+        state free
+    ?retrieval>		;; no remembering nback otherwise
+        state free
+        buffer empty
+==>
+    =goal>
+        isa drive
+        needvisual y
+    +visual>
+        isa move-attention
+        screen-pos =visual-location
+)
+
+;------------------------------
+
+(p speedo*waited-long-enough 
+    =goal>
+        isa drive
+        phase checkwait
+        waitUntil =wait
+        needvisual n
+    =temporal>
+        ticks =something
+        >= ticks =wait
+==>
+    =goal>
+        isa drive
+        phase attend
+        needvisual y       
+)
+
+;; ------------------------------ATTEND---------------------------
+
+(p speedo*attend-first-time
+    =goal>
+        isa drive	
+        phase attend
+        attendstart n
+    =imaginal>
+        isa nback-state
+        nbackspeed =nbackspeed
+    =visual>
+        isa speedometer
+        value =value
+        ; ?retrieval>
+        ; state free
+        ; buffer empty
+==>
+    !eval! (set-speedo-speed =value)
+    =goal>
+        isa drive        
+        phase free
+        speedo =nbackspeed
+        attendstart y
+        needvisual n
+    =imaginal>
+    +temporal>
+        isa time
+        ticks 0        
+    -retrieval>	;;; to remove the error hopefully
+)
+
+(p speedo*attend
+    =goal>
+        isa drive	
+        phase attend
+        attendstart y
+        waitUntil =wait
+    =imaginal>
+        isa nback-state
+        nbackspeed =speed
+        1back =back
+    =visual>
+        isa speedometer
+        value =value
+    =temporal>
+        ticks =something
+        >= ticks =wait ;; new
+        ;?retrieval>
+        ;state free
+        ;buffer empty
+==>
+    !bind! =safe (eval-speed =value =speed)
+    !eval! (set-speedo-speed =value) 
+    =goal>
+        isa drive
+        status nil
+        phase free
+        nbackspeed =speed
+        1back =back
+        needvisual n
+        waitUntil 0
+    +imaginal>
+        isa speedoexp
+        ticks =something
+        timing =safe
+        speed =speed
+    -imaginal>
+    +imaginal>
+        isa nback-state
+        nbackspeed =speed
+        1back =back        
+    +temporal>
+        clear
+    +temporal>
+        isa time
+        ticks 0
+    -retrieval>	;;; to remove the error hopefully
+)
+
+;-----------------------SIGN DURING CHECKING----------------------
+
+
+
+;----------------- NBACK general----------------------------------------
+
+(p nback-start
+        ;create an empty imaginal buffer
+    =goal>
+        isa nback
+        status start        
+    ?imaginal>
+        state free
+==>
+    =goal>
+        status notice
+        num 0
+        nr 0
+        rehearsal f
+    +imaginal>
+        isa nback-state
+        nbackspeed 60
+        1back 0
+        cid 0
+        ;+visual-location>
+        ;isa visual-location
+        ;kind near   
+)
+
+;; ----------INSTRUCTIONS------------------------------------------------------
+
+(p notice-instructions
+    =goal>
+        isa nback
+        status notice
+    =visual-location>
+        isa visual-location
+        kind instructions
+        :attended nil    
+    !eval! (didnt-see-instructions)
+==>      
+    !eval! (saw-instructions)
+    =goal>
+        isa nback
+        status processInstructions
+    +visual>
+        isa move-attention
+        screen-pos =visual-location
+)
+
+(p interrupt-and-notice-instructions
+    =goal>
+        isa nback
+        status notice  
+    =visual-location>
+        isa visual-location
+        kind instructions
+        :attended nil    
+    ?visual>
+        state free
+    !eval! (didnt-see-instructions)
+==>      
+    !eval! (saw-instructions)
+    =goal>
+        isa nback
+        status processInstructions
+    +visual>
+        isa move-attention
+        screen-pos =visual-location 
+)
+
+(p process-instructions	;; and reset stuff
+    =goal>
+        isa nback
+        status processInstructions
+    =visual>
+        isa instructions 
+        value =nback
+==>
+    !bind! =signs (+ =nback 1)
+    !bind! =num (reset-num-sign)
+    !bind! =nr (reset-rehearsal) 
+    =goal>
+        isa nback
+        status notice
+        num =num
+        nr =nr
+        ntask =nback
+        needsigns =signs
+)
+
+
+;; --------------------- SPEED SIGN----------------------------
+
+(p notice-sign
+    =goal>
+        isa nback
+        status notice
+    =visual-location>
+        isa visual-location
+        :attended nil
+        kind speedsign
+    ?visual>
+        state free
+    !eval! (didnt-see-sign)
+==>
+    !eval! (saw-speed-sign)
+    =goal>
+        isa nback
+        status read-nback
+        rehearsal f
+    +visual>
+        isa move-attention
+        screen-pos =visual-location
+)
+
+(spp :u 10)
+
+;----------------- NBACK ---------------------------------------
+
+;nback and rehearsal are split in two parts:
+;part 1 (*): build list until n speed signs have been passed
+;part 2: perform n-back task
+
+(p nback-follow-0back
+    =goal>
+        isa nback
+        status read-nback
+        ntask 0
+        rehearsal f
+    =visual>
+        isa speedsign
+        value =tlimit
+==>
+    !bind! =cid (get-chunk-id)
+    !bind! =nr (reset-rehearsal)
+    !bind! =num (get-num-sign)
+    =goal>
+        status remember1
+        nr =nr
+        num =num
+    +imaginal>
+        isa nback-state
+        1back =cid 
+        nbackspeed =tlimit ;perform 0-back continuously
+        slimit =tlimit
+)
+
+(p nback-memorise-sign*
+        ;building the initial list
+    =goal>
+        isa nback
+        status read-nback
+        > ntask 0
+        ntask =x
+        < num =x
+    =visual>
+        isa speedsign
+        value =tlimit
+        ; ?retrieval>
+        ; buffer empty
+    =imaginal>
+        isa nback-state
+        nbackspeed =something
+==>
+    !bind! =cid (get-chunk-id)
+    !bind! =num (get-num-sign)
+    !bind! =nr (reset-rehearsal)    
+    =goal>
+        isa nback
+        status notice
+        num =num
+        nr =nr
+        rehearsal t
+    =imaginal>
+        isa nback-state
+        id =cid
+        slimit =tlimit		;;taken from sign
+    -imaginal>
+    +imaginal>
+        isa nback-state
+        1back =cid 
+        nbackspeed =tlimit 
+        slimit =tlimit ;perform 0-back until enough signs have been passed
+    -retrieval>
+)
+
+(p nback-memorise-sign ;; for nbacks > 0
+    =goal>
+        isa nback
+        status read-nback
+        > ntask 0
+        ntask =x
+        >= num =x		;; not needsigns because num is updated in this production, not before
+        rehearsal f
+    =visual>
+        isa speedsign
+        value =tlimit
+    =imaginal>
+        isa nback-state
+        nbackspeed =nbackspeed
+        1back =1back
+==>
+    !bind! =cid (get-chunk-id)
+    !bind! =nr (reset-rehearsal)
+    !bind! =num (get-num-sign)
+    =goal>
+        status remember1
+        nr =nr
+        num =num
+    =imaginal>
+        id =cid
+        slimit =tlimit
+        ; -imaginal>
+        ; +imaginal>
+        ;   ;    isa nback-state
+        ;   1back =cid 
+        ;  nbackspeed =tlimit
+    +retrieval>
+        isa nback-state
+        id =1back
+)
+
+
+;----------------- REHEARSAL* ---------------------------------------
+
+(p nback-briefly-stop-rehearsal
+    =goal>
+        isa nback
+        status notice
+        < nr 1		;; number of rehearsals
+        > num 0
+        rehearsal t
+    =retrieval>
+        isa nback-state
+==>
+    =goal>
+        status notice
+    -retrieval>
+)
+
+;------------------------------------------------------------------------
+
+(p nback-start-rehearsal
+    =goal>
+        isa nback
+        status notice
+        < nr 3		;; number of rehearsals
+        > num 0
+        rehearsal t
+    =imaginal>
+        isa nback-state
+        1back =1back
+    ?visual-location>
+        buffer empty
+    ?visual>
+        buffer empty
+    ?retrieval>
+        buffer empty	;; so it doesn't interrupt speedo checking
+==>
+    !bind! =nr (get-num-rehearsal)
+    =goal>
+        status rehearse0
+        nr =nr
+    =imaginal>
+    +retrieval>
+        isa nback-state
+        id =1back
+)
+
+(p nback-rehearse-sign-0back*
+    =goal>
+        isa nback
+        status rehearse0
+        needsigns =x
+        < num =x
+        num 1
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    =retrieval>
+        ;-retrieval>
+)
+
+(p nback-rehearse-sign-1back*
+    =goal>
+        isa nback
+        status rehearse1
+        needsigns =x
+        < num =x
+        num 2
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    =retrieval>
+        ;-retrieval>
+)
+
+(p nback-rehearse-sign-2back*
+    =goal>
+        isa nback
+        status rehearse2
+        needsigns =x
+        < num =x
+        num 3   
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    =retrieval>
+        ;-retrieval>
+)
+
+(p nback-rehearse-sign-3back*
+    =goal>
+        isa nback
+        status rehearse3
+        needsigns =x
+        < num =x
+        num 4
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    =retrieval>
+        ;-retrieval>
+)
+
+;; no 4* because that follows the remember path
+
+(p nback-enough-rehearsal*
+    =goal>
+        isa nback
+        status notice
+        >= nr 3		;; number of rehearsals
+        > num 0
+        rehearsal t
+==>
+    !bind! =nr (get-num-rehearsal)
+    =goal>
+        status notice
+        rehearsal f
+    -retrieval>
+)
+
+;----------------- REHEARSAL ---------------------------------------
+
+(p nback-rehearse-sign-0back
+    =goal>
+        isa nback
+        status rehearse0
+        > num 1
+    =retrieval>	
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status rehearse1
+    +retrieval>
+        isa nback-state
+        id =1back    
+)
+
+(p nback-rehearse-sign-0back-and-stop
+    =goal>
+        isa nback
+        status rehearse0
+        ntask 0
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    -retrieval>
+)
+
+(p nback-rehearse-sign-1back
+    =goal>
+        isa nback
+        status rehearse1
+        > ntask 1
+        > num 2
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status rehearse2
+    +retrieval>
+        isa nback-state
+        id =1back
+)
+
+(p nback-rehearse-sign-1back-and-stop
+    =goal>
+        isa nback
+        status rehearse1
+        ntask 1
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    -retrieval>
+)
+
+(p nback-rehearse-sign-2back
+    =goal>
+        isa nback
+        status rehearse2
+        > ntask 2
+        > num 3
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status rehearse3
+    +retrieval>
+        isa nback-state
+        id =1back
+)
+
+(p nback-rehearse-sign-2back-and-stop
+    =goal>
+        isa nback
+        status rehearse2
+        ntask 2
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    -retrieval>
+)
+
+(p nback-rehearse-sign-3back
+    =goal>
+        isa nback
+        status rehearse3
+        > ntask 3
+        > num 4 
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status rehearse4
+    +retrieval>
+        isa nback-state
+        id =1back
+)
+
+(p nback-rehearse-signs-3back-and-stop
+    =goal>
+        isa nback
+        status rehearse3
+        ntask 3
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location>
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    -retrieval>
+)
+
+(p nback-rehearse-sign-4back
+    =goal>
+        isa nback
+        status rehearse4
+        ntask 4
+        >= num 5
+    =retrieval>
+        isa nback-state
+        1back =1back
+    =visual-location> 
+        isa visual-location
+        - kind speedsign
+==>
+    =goal>
+        status notice
+    -retrieval>
+        ;-retrieval>
+)
+
+;;----------------------REMEMBER------------------------------------------
+
+(p nback-remember-sign-1back-go-further
+    =goal>
+        isa nback
+        status remember1
+        > ntask 1
+    =retrieval>
+        isa nback-state
+        1back =1back
+==>
+    =goal>
+        status remember2
+    +retrieval>
+        isa nback-state
+        id =1back
+)
+
+(p nback-remember-sign-1back-and-stop
+    =goal>
+        isa nback
+        status remember1
+        ntask 1
+    =retrieval>
+        isa nback-state
+        slimit =nbackspeed
+    =imaginal>
+        id =1back        
+==>
+    =goal>
+        status notice
+        rehearsal t
+    -imaginal>
+    +imaginal>
+        isa nback-state
+        1back =1back
+        nbackspeed =nbackspeed
+)
+;;--------------------
+(p nback-remember-sign-2back-go-further
+    =goal>
+        isa nback
+        status remember2
+        > ntask 2
+    =retrieval>
+        isa nback-state
+        1back =1back
+==>
+    =goal>
+        status remember3
+    +retrieval>
+        isa nback-state
+        id =1back
+)
+
+(p nback-remember-sign-2back-and-stop
+    =goal>
+        isa nback
+        status remember2
+        ntask 2
+    =retrieval>
+        isa nback-state
+        slimit =nbackspeed
+    =imaginal>
+        id =1back   
+==>
+    =goal>
+        status notice
+        rehearsal t
+    -imaginal>
+    +imaginal>
+        isa nback-state
+        1back =1back
+        nbackspeed =nbackspeed
+)
+;;--------------------
+(p nback-remember-sign-3back-go-further
+    =goal>
+        isa nback
+        status remember3
+        > ntask 3
+    =retrieval>
+        isa nback-state
+        1back =1back
+==>
+    =goal>
+        status remember4
+    +retrieval>
+        isa nback-state
+        id =1back
+)
+
+(p nback-remember-sign-3back-and-stop
+    =goal>
+        isa nback
+        status remember3
+        ntask 3
+    =retrieval>
+        isa nback-state
+        slimit =nbackspeed
+    =imaginal>
+        id =1back   
+==>
+    =goal>
+        status notice
+        rehearsal t
+    -imaginal>
+    +imaginal>
+        isa nback-state
+        1back =1back
+        nbackspeed =nbackspeed
+)
+;;--------------------
+(p nback-remember-sign-4back-and-stop
+    =goal>
+        isa nback
+        status remember4 
+        > ntask 3
+    =retrieval>
+        isa nback-state
+        slimit =nbackspeed
+    =imaginal>
+        id =1back
+==>
+    =goal>
+        status notice
+        rehearsal t
+    -imaginal>
+    +imaginal>
+        isa nback-state
+        1back =1back
+        nbackspeed =nbackspeed
+)
+
+;;----------------------INTERRUPT------------------------------------------
+
+(p nback-interrupt-rehearsing-notice-sign
+    =goal>
+        isa nback
+        - status notice  
+        - status read-nback
+    =visual-location>
+        isa visual-location
+        kind speedsign
+    !eval! (didnt-see-sign)
+==>
+    !eval! (saw-speed-sign)
+    =goal>
+        status read-nback   
+        rehearsal f
+    -retrieval>
+    +visual>
+        isa move-attention
+        screen-pos =visual-location
+)
+
+;;--------------------
+(p nback-retrieval-failure
+    =goal>
+        isa nback
+        - status notice
+        - status read-nback
+    ?retrieval>
+        state error
+==>
+    =goal>
+        status notice
+        rehearsal f
+    -retrieval>
+)
+
+(spp :u 100)
+
+(set-similarities
+    
+    (20 20 0) (20 40 -0.1) (20 60 -0.2) (20 80 -0.4) (20 100 -0.8) 
+    (40 20 -0.1) (40 40 0) (40 60 -0.1) (40 80 -0.2) (40 100 -0.4) (40 120 -0.8) 
+    (60 20 -0.2) (60 40 -0.1) (60 60 0) (60 80 -0.1) (60 100 -0.2) (60 120 -0.4) (60 140 -0.8)
+    (80 20 -0.4) (80 40 -0.2) (80 60 -0.1) (80 80 0) (80 100 -0.1) (80 120 -0.2) (80 140 -0.4) (80 160 -0.8)
+    (100 20 -0.8) (100 40 -0.4) (100 60 -0.2) (100 80 -0.1) (100 100 0) (100 120 -0.1) (100 140 -0.2) (100 160 -0.4) (100 180 -0.8)
+    (120 40 -0.8) (120 60 -0.4) (120 80 -0.2) (120 100 -0.1) (120 120 0) (120 140 -0.1) (120 160 -0.2) (120 180 -0.4) 
+    (140 60 -0.8) (140 80 -0.4) (140 100 -0.2) (140 120 -0.1) (140 140 0) (140 160 -0.1) (140 180 -0.2)
+    (160 80 -0.8) (160 100 -0.4) (160 120 -0.2) (160 140 -0.1) (160 160 0) (160 180 -0.1)
+    (180 100 -0.8) (180 120 -0.4) (180 140 -0.2) (180 160 -0.1) (180 180 0) 
+)
+
+(goal-focus goal1)
+(goal-focus goal2)
