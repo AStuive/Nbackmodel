@@ -133,7 +133,8 @@ public class Road extends Driving
 					if (curving) da = ((da > 0) ? -1 : +1) * dascale * 17; // (i % 17);
 				}
 			}
-			if (curving) h = h.rotate (da);
+			if (curving) 
+				h = h.rotate (da);
 			p = p.add (h);
 			Segment s = new Segment (p.x + d*h.z, p.z - d*h.x, p.x, p.z, p.x - d*h.z, p.z + d*h.x);
 			segments.addElement (s);
@@ -406,7 +407,7 @@ public class Road extends Driving
 				{ 
 					if (oldLoc!=null && newLoc!=null && (lp==1 || lp==4 || ((ri+di) % 5 < 2)))
 					{
-						System.out.println("lp: " + lp); 
+						//System.out.println("lp: " + lp); 
 						g.setColor (Color.white);
 						g.drawLine (oldLoc.x, oldLoc.y, newLoc.x, newLoc.y);	
 					} 
@@ -421,30 +422,44 @@ public class Road extends Driving
 		}		
 	}
 
-	void drawSign(Graphics g, Env env)
+	void drawSign(Graphics g, Env env) // env 640 x 360
 	{
 		Coordinate im1 = Driving.signPos;
 
 		if (im1 == null) return;		// null if you don't want to see a speedsign
-		g.setColor(Color.GRAY);
-		g.fillRect(im1.x+18, im1.y-30, 3, 30);		
+		
 		g.setColor(Color.red);
-		g.fillOval(im1.x+10, im1.y-50, 20, 20);
+		g.fillOval(570, 200, 70, 70);			// middle sign = 605, 235
 		g.setColor(Color.white);
-		g.fillOval(im1.x+12, im1.y-48, 16, 16);
+		g.fillOval(580, 210, 50, 50);
 		g.setColor(Color.black);
-		g.drawString(Driving.currentLimit, im1.x+13, im1.y-35);
+		g.setFont(new Font("Helvetica", Font.BOLD, 30)); 		
+		if (currentLimit.length() > 2)
+			g.drawString(Driving.currentLimit, 582, 245); 		// width 45
+		else 
+			g.drawString(Driving.currentLimit, 590, 245);		// width 30
+		int width = g.getFontMetrics().stringWidth(currentLimit);
+		//System.out.println(width); 
+			
+//		g.setColor(Color.GRAY);
+//		g.fillRect(im1.x+18, im1.y-30, 3, 30);		
+//		g.setColor(Color.red);
+//		g.fillOval(im1.x+10, im1.y-50, 20, 20);
+//		g.setColor(Color.white);
+//		g.fillOval(im1.x+12, im1.y-48, 16, 16);
+//		g.setColor(Color.black);
+//		g.drawString(Driving.currentLimit, im1.x+13, im1.y-35);
 	}
 	
 	
 	void drawInstructions(Graphics g, Env env)
 	{
-		if (instructionsSeen) 
+		if (instructionsShowing) 
 		{
 			Font myFont = new Font("Helvetica", Font.BOLD, 16); //instruction font
 			g.setFont(myFont);
 			g.setColor(Color.black);
-			g.drawString(Driving.currentNBack, 300, 50);
+			g.drawString(Driving.currentNBack, 297, 50);		// width 46, middle screen = 320
 		}
 	}
 	

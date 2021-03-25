@@ -292,7 +292,7 @@ public class Simcar extends Vehicle
 
 	double getDistance() 
 	{
-		return distanceDriven; // fracIndex - 100; 
+		return fracIndex - 100; // distanceDriven;
 	}
 
 	double devscale = .0015;

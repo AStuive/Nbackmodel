@@ -27,13 +27,30 @@ import actr.task.Task;
  */
 
 /* TODO
-Speed sign location : make it appear earlier/bigger 	moves super fast now 
-parallel to road end
-Conflicts instruction/speedsigns/speedo
 java internal width of lanes smaller
-	different lane widths even within condition
+different lane widths even within condition
 smaller lanes
 block switching + additional nback levels in array 4	2	1	3	2	0	3	4	0	1
+accelbrake verhogen bij 100+ snelheden, trekt niet meer op
+
+act-r
+add (un)safe
+continuous and single rehearsal
+check 4backs
+
+
+the get-visual-location can fire multiple times, even after get-visual wrong-kind never fires now (buffer always busy?)
+wait for vision to be available for check or just force it?
+
+order of just-check (add to add)
+latency most recent productions, some might need to be updated in other models	
+
+
+For every new n-back task, participants were instructed to stay at the 
+speed of the first sign until they passed ‘n’ successive speed signs
+before they could begin with the n-back task.
+
+
 */
 
 public class Driving extends actr.task.Task
@@ -67,20 +84,23 @@ public class Driving extends actr.task.Task
 	double signOnset = 0; 
 	double instructionsOnset = -5;		
 	double warningOnset = 0;
+	boolean signShowing = false; 
 	boolean signSeen = false; 
-	static boolean instructionsSeen = false;
+	int signReadded = 0; 
+	static boolean instructionsShowing = false;
 	static boolean warningSeen = false;
+	boolean instructionsSeen = false; 
+	int instrReadded = 0; 
 	static int speedI = 0;
 	static Coordinate signPos;
 	static String currentNBack = "";
-	String[] nBack_list = {"2back", "3back", "0back", "1back", "4back", "0back", "3back", "4back", "1back", "2back"};
+	String[] nBack_list = {"4back", "3back", "0back", "1back", "4back", "0back", "3back", "4back", "1back", "2back"};
 	String[] nBack_list_constr = {"2back", "3back", "0back", "1back", "4back", "0back", "3back", "4back", "1back", "2back"};
 	double sign_count = 0;
 	int rehearsal_count = 0;
 	static String imaginedSpeedlimit = "60";
 	List<String> output = new ArrayList<String>();	
-	double acceptableSpeedDiff = 2; 
-	double mentalSpeed = 16.66666667; 
+	double mentalSpeed = 8; 
 	double roughSpeed; 
 	double prevTime = 0; 
 	double curTime; 
@@ -88,7 +108,17 @@ public class Driving extends actr.task.Task
 	double curDist; 	
 	boolean newCSV = true; 
 	String[] blocks = {"normal", "construction", "normal", "construction", "normal", "construction", "normal", "construction"}; 
-	String curBlock = "construction"; 
+	String curBlock = "normal"; 
+	int[] speedSigns = {0, 0, 0, 0, 0}; 	// adds most recent speed at [4]
+	int speedSignsAdded = 0; 
+	int correctNbackSpeed = 0;
+	int numSpeedoChecks = 0; 
+	double freqSpeedoChecks = 0; 
+	double timeStartBlock = 0; 
+	double envTime[] = {0};
+	double blockTime[] = new double[envTime.length]; 
+	String prevCorSpeed = ""; 
+
 	
 	public Driving ()
 	{
@@ -113,14 +143,8 @@ public class Driving extends actr.task.Task
 			if (simulator == null) simulator = new Simulator ();
 			add (simulator, BorderLayout.CENTER);
 			simulator.useSimulation (simulation);
-			signPos = null; 
-			signOnset = 0;
-			signSeen = false; 
-			instructionsOnset = -5;
-			instructionsSeen = false; 
-			mentalSpeed = 16.666667; 		// 60 kmh
-		}
-		else
+
+		} else
 		{
 			curBlock = blocks[nback_count]; 
 			
@@ -152,12 +176,22 @@ public class Driving extends actr.task.Task
 		speed = 0;
 		previousLimit = "60";
 		currentLimit = "60";
-
+		currentNBack = ""; 
+		signPos = null; 
+		signOnset = 0;
+		signShowing = false; 
+		instructionsOnset = -5;
+		instructionsShowing = false; 
+		warningSeen = false;
+		mentalSpeed = 8; 		
+		speedSignsAdded = 0; 
+		correctNbackSpeed = 0; 
+		Arrays.fill(speedSigns, 0);  	// make all 0 again
+		
 		getModel().getVision().addVisual ("near", "near", "near", nearLabel.getX(), nearLabel.getY(), 1, 1, 10);
 		getModel().getVision().addVisual ("far", "far", "far", farLabel.getX(), farLabel.getY(), 1, 1, 100);
 		getModel().getVision().addVisual ("speedometer", "speedometer", "speedometer", 150, 315, 1, 1, 1);
 		addPeriodicUpdate (Env.sampleTime);
-		
 		
 	}
 
@@ -204,7 +238,6 @@ public class Driving extends actr.task.Task
 		//reverse order randomly for participants
 		if (nback_count == 0 && Math.round(Math.random()) == 1)
 		{
-			
 			//nBack_list_constr = new String[] {"2back", "3back", "0back",  "1back", "4back",  "0back", "3back",  "4back",  "1back",   "2back"}; 
 			//keep the old order
 		} else if(nback_count == 0)
@@ -214,22 +247,54 @@ public class Driving extends actr.task.Task
 			//nBack_list_constr = new String[] {"2back", "1back", "4back", "3back", "0back", "4back", "1back", "0back", "3back", "2back"};
 		}
 
-		//add instructions
-		// now at 3 seconds and every 60 sec		x5 seconds works as long as signs are there every 20 sec
+		//3 min speed signs, stop, instructions, show speed signs again
+		// offset by 10 seconds always
 		
-		if(!instructionsSeen && ((time > 5 && time < 7) || (time > 1 && time%60 < 1)))		// instr at 10s?
+		//add instructions
+		// now at 3 seconds and every 60 sec		 
+		if(!instructionsShowing && ((time > 5 && time < 7) || (time > 1 && ((time%90)+10) < 1)))
 		{
-			instructionsSeen = true;
+			// reset some variables
+			numSpeedoChecks = 0; 
+			freqSpeedoChecks = 0;
+			// make a deep copy of env time
+			double envTime[] = {simulation.env.time};
+			double blockTime[] = new double[envTime.length]; 
+			blockTime[0] = envTime[0]; 
+			timeStartBlock = blockTime[0];
+				
+			instructionsShowing = true;
+			double timeInt = time; 
 			currentNBack = nBack_list[nback_count];
-			getModel().getVision().addVisual("instructions", "instructions", currentNBack.substring(0,1), 300, 50, 50, 50, 0);
-			instructions.setLocation(300, 50);
-			System.out.println("instr at " + time + "\n");
+			// Clear speeds array and correct speed
+			prevCorSpeed = Integer.toString(correctNbackSpeed); 
+			correctNbackSpeed = 0; 
+			System.out.println("prev: " + prevCorSpeed + " curr: " + correctNbackSpeed); 
+			for (int i = 0; i < speedSigns.length; i++)
+				speedSigns[i] = 0;
+			
+						getModel().getVision().addVisual("instructions", "instructions", currentNBack.substring(0,1), 320, 45, 50, 50, 0);
 			instructionsOnset = time;
 			nback_count++;
-		} else if((time - instructionsOnset >= 3) && instructionsOnset >= 0 && instructionsSeen)	// 2
+			System.out.println("nbackcount: " + nback_count); 
+		} else if (time - instructionsOnset < 3 && instructionsOnset >= 0 && instructionsShowing)
+		{
+			// artificially giving the model more time to notice instructions by re-adding them
+			if (!instructionsSeen && instrReadded < 40)
+			{	//System.out.println("instructions: " + currentNBack + " now"); 
+				//System.out.println(instrReadded + " Readded instructions at " + time); 
+				getModel().getVision().removeVisual("instructions");
+				getModel().getVision().addVisual("instructions", "instructions", currentNBack.substring(0,1), 320, 45, 50, 50, 0);
+				//instructionsSeen = true; 
+				instrReadded++; 
+			}
+				
+		} else if((time - instructionsOnset >= 3) && instructionsOnset >= 0 && instructionsShowing)	// 2
 		{
 			getModel().getVision().removeVisual("instructions");
+			instructionsShowing = false;
 			instructionsSeen = false;
+			instrReadded = 0; 		
 		}
 	}
 
@@ -239,11 +304,14 @@ public class Driving extends actr.task.Task
 		Env env = simulation.env;
 		Simcar simcar = simulation.env.simcar;
 		
-		// time%20 before!			
-		if((int)time%10 == 0 && !signSeen && (speedI < speedlimits.length) )
-		{
+		Random r = new Random((long)time); 
+		double noise = r.nextGaussian() * 0.25;	
+		
+		// time%20 before!	added some temporal jitter			
+		if((int)(time+noise)%20 == 0 && !signShowing && (speedI < speedlimits.length) )
+		{	
 			if (env.simcar.nearPoint != null)
-			{	
+			{	System.out.println("jitter: " + noise); 
 				//pick a random speed with delta<30
 				previousLimit = currentLimit;
 				while (Math.abs(Integer.parseInt(currentLimit) - Integer.parseInt(previousLimit)) > 30 || (currentLimit == previousLimit))
@@ -251,41 +319,53 @@ public class Driving extends actr.task.Task
 					int rnd = new Random().nextInt(speedlimits.length);
 					currentLimit = speedlimits[rnd];
 				} 
-
-				Position newLoc = Road.location(env.simcar.fracIndex + 20 , 4);		// 20 fracIndex, laneposition
+				// keeps an array with the recent speeds to get the right one for the current nback
+				int newSpeed = Integer.parseInt(currentLimit); 				
+				if (speedSignsAdded > 0) 
+					shiftLeft(); 
+				speedSignsAdded++;
+				speedSigns[4] = newSpeed; 
+				
+				// determine what speed it should be driving at
+				int nback = Character.getNumericValue(currentNBack.charAt(0)); 	
+				if (speedSignsAdded > nback)
+				{	prevCorSpeed = Integer.toString(correctNbackSpeed); 
+					correctNbackSpeed = speedSigns[4 - nback];		
+				}
+				System.out.println(String.format("%.2f",time) + Arrays.toString(speedSigns) + " nback: " + nback + " corspeed: " + correctNbackSpeed); 		
+				
+				// display speed sign
+				Position newLoc = Road.location(env.simcar.fracIndex + 20 , 4);		// env.simcar.fracIndex + 20 , 4
 				newLoc.y = 0.0;
 				signPos = env.world2image(newLoc);
-				signSeen = true;
-				getModel().getVision().addVisual ("speedsign", "speedsign", currentLimit, (int)signPos.x, (int)signPos.y, 1, 1, 100);
-				speedsign.setLocation((int)signPos.x, (int)signPos.y);
+				signShowing = true;
+				//getModel().getVision().addVisual ("speedsign", "speedsign", currentLimit, (int)signPos.x, (int)signPos.y, 1, 1, 100);
+				getModel().getVision().addVisual ("speedsign", "speedsign", currentLimit, 605, 235, 1, 1, 100);
+				//speedsign.setLocation(605, 235); //speedsign.setLocation((int)signPos.x, (int)signPos.y);
 				signOnset = time;
-			} else
-				System.out.println("nearpoint = null");
+			} 
+				
 		// move the speed sign
-		} else if (signSeen && (time - signOnset < 2) && signOnset > 0&& (int)Utilities.mps2mph(Utilities.mph2kph(simcar.speed))	>= 0) 
+		} else if (signShowing && (time - signOnset < 2) && signOnset > 0) 
 		{ 
-			signPos.x += 15;
-			signPos.y += 1;
-			getModel().getVision().moveVisual("speedsign", (int)signPos.x, (int)signPos.y);
-			speedsign.setLocation((int)signPos.x , (int)signPos.y);
-			/*		 
-			km/h	m/s				second before sign gone (100 m)
-			60		16.66666667		6
-			70		19.44444444		5.142857143
-			80		22.22222222		4.5
-			90		25				4
-			100		27.77777778		3.6
-			110		30.55555556		3.272727273
-			120		33.33333333		3
-			130		36.11111111		2.769230769
-			  */
-		} else if(signSeen && (time - signOnset >= 2) && signOnset > 0)
+			// artificially giving the model more time to notice sign by re-adding it
+			if (!signSeen && signReadded < 40)
+			{
+				//System.out.println(signReadded + " Readded speed sign at " + time); 
+				getModel().getVision().removeVisual("speedsign");
+				getModel().getVision().addVisual ("speedsign", "speedsign", currentLimit, 605, 235, 1, 1, 100);
+				signReadded++;
+			}
+//			signPos.x += 5;
+//			signPos.y += 1;
+
+		} else if(signShowing && (time - signOnset >= 2) && signOnset > 0)
 		{
 			getModel().getVision().removeVisual("speedsign");
 			signPos = null; 
-			signSeen = false;
-			
-		// moving the speed sign while it's being shown
+			signShowing = false;
+			signSeen = false; 
+			signReadded = 0; 
 		}   
 	}
 
@@ -302,8 +382,8 @@ public class Driving extends actr.task.Task
 		if (env.simcar.nearPoint != null)
 		{
 			Coordinate cn = env.world2image (env.simcar.nearPoint);
-			Coordinate cc = env.world2image (env.simcar.carPoint);
-			//Coordinate cc = env.world2image (env.simcar.farPoint);
+			Coordinate cc = env.world2image (env.simcar.farPoint);
+			//Coordinate cc = env.world2image (env.simcar.carPoint);
 
 			if (cn == null || cc == null) env.done = true;
 			else
@@ -355,61 +435,67 @@ public class Driving extends actr.task.Task
 		simcar.accelerator = (accelBrake >= 0) ? accelBrake : 0;
 		simcar.brake = (accelBrake < 0) ? -accelBrake : 0;
 	}
-
-	/* the speedometer check is only used to update the mental representation of what speed we're driving at. 
-	 * the original process far production is still the one responsible for maintaining the speed, 
-	 * the only difference is that is used the mental representation of the speed to accelerate/brake
-	 * this mental representation is mainly based on the distance travelled between far point checks, 
-	 * and gets real accuracy when you check the speedometer. 
-	 * the distance between far points is accurate, so add some normal distribution noise around it.  */
 	
-	void keepLimit(double slimit)
+	void keepLimit(double slimit)	// slimit is nbackspeed from imaginal
 	{	
-		imaginedSpeedlimit = Integer.toString((int)slimit); //for sampling
-		Simcar simcar = simulation.env.simcar;
-		double speed =  mentalSpeed; 		// simcar.speed
+		makeCSVwithData(simulation.env.simcar.speed, roughSpeed, mentalSpeed);
+		imaginedSpeedlimit = Integer.toString((int)slimit); 
+				
+		Simcar simcar = simulation.env.simcar;	
+		double realSpeed = simcar.speed; 
 		slimit = Utilities.mph2mps(Utilities.kph2mph(slimit));
-		//System.out.println("simcar speed: " + simcar.speed + "\tmental: " + mentalSpeed + "\tlimit: " + slimit); 
-	
-		double diff = (slimit - speed);
+
+		// calculate the difference between what the model thinks it should be driving and what it should be driving
+		double deltaSpeed; 
+		if (correctNbackSpeed != 0)
+			deltaSpeed = Utilities.mph2mps(Utilities.kph2mph(correctNbackSpeed)) - realSpeed; 	
+		 else
+		 {	// So after new instructions it keeps following the speed it was driving at
+			 deltaSpeed = Utilities.mph2mps(Utilities.kph2mph(Double.parseDouble(currentLimit))) - realSpeed;
+		 }
 		double time = simulation.env.time - startTime;
 
-		//display warning if the speed limit is not kept (method says 6 seconds (3 before and after))
-		
-		if( Math.abs(diff)>1.39 && !warningSeen && signOnset != 0 && (time - signOnset) > 3) //1.39 m/s is roughly 5 km/h
+		//warning if the speed limit is not kept (method says 6 seconds (3 before and after))
+		if( Math.abs(deltaSpeed)>1.39 && !warningSeen && signOnset != 0 && (time - signOnset) > 3) //1.39 m/s is roughly 5 km/h
 		{	
 			warningOnset = time;
 			getModel().getVision().addVisual("warning", "warning", "warning", 200, 100, 50, 50);
 			warning.setLocation(200, 50);
 			warningSeen = true;
-		} else if (warningSeen && (time - warningOnset) > 3)
+		} else if (warningSeen && Math.abs(deltaSpeed)<=1.39) // && (time - warningOnset) > 3) 
 		{
 			getModel().getVision().removeVisual("warning");
 			//warningOnset = time;
 			warningSeen = false;
 		}
-			
+		
+
+		//System.out.println("\t\tcorspeed: " + String.format("%.2f",slimit) + " (" + String.format("%.2f",(slimit*3.6)) + " kmh)" + "\tmentalspeed: " + String.format("%.2f",mentalSpeed) + "\tsimcarspeed: " + String.format("%.2f",simcar.speed)); 
+		
+		// acceleration is based on the MENTAL speed, not (necessarily) what the car is actually driving at
+		double diff = slimit - mentalSpeed;
 		if (Math.abs(diff) > 0)
-		{
-			//			double dacc = (dthw * accelFactor_dthw 1.2)
-			//			+ (dt * (fthw - thwFollow 1.0) * accelFactor_thw 0.4);
-			
-			if(diff > 2) {	// 1
-				double dacc = (diff * 1.2) + (0.25 * diff * 0.4); // (diff*10 * 1.2) + (0.25 * diff * 0.4) braking too hard
+		{		
+			if(diff > 2) {	
+				double dacc = (diff * 1.2) + (0.25 * diff * 0.4); 
 				accelBrake += dacc;
-				accelBrake = minSigned (accelBrake, 1.0); // 1.5
+				accelBrake = minSigned (accelBrake, 1.0); // 
 			} else
 			{
 				double dacc = (diff* 1.2) + (0.25 * diff * 0.4);
 				accelBrake += dacc;
-				accelBrake = minSigned (accelBrake, 0.65);	// 0.65
+				accelBrake = minSigned (accelBrake, 0.65);	
 			}	
 		}
-		simcar.accelerator = (accelBrake >= 0) ? accelBrake : 0;
-		simcar.brake = (accelBrake < 0) ? -accelBrake : 0;
+		
+		simcar.accelerator = (accelBrake >= 0) ? 1.5*accelBrake : 0;
+		if (diff < 2.77) // 10 km/h
+			accelBrake /= 200; 
+		simcar.brake = (accelBrake < 0) ? -(accelBrake) : 0;		// braking is way too strong
+		//System.out.println("accelbrake: " + 	accelBrake); 
 	}
 
-	void makeCSVwithSpeeds(double real, double rough, double mental)
+	void makeCSVwithData(double real, double rough, double mental)
 	{
 		try {
 	        FileWriter fw = new FileWriter("speeds.csv", true);
@@ -417,14 +503,28 @@ public class Driving extends actr.task.Task
 	        PrintWriter pw = new PrintWriter(bw);	
 	        if (newCSV)
 	        {
-	        	pw.println("Real, Rough, Mental, Limit, Real-Rough, Real-Mental, Correct-Real");
+	        	pw.println("\nTime, Real, Rough, Mental, CorrectSpeed, Real-Rough, Real-Mental, Correct-Real, FreqSpeedo, Nback, Road");
 	        	newCSV = false; 
 	        }
-	        int corrSpeed = Integer.parseInt(imaginedSpeedlimit);
-	        pw.println(real + "," + rough + "," + mental + "," + corrSpeed + "," + (real-rough) + "," + (real-mental) + "," + (corrSpeed-real));
+	        double corrSpeed; 
+	        if (correctNbackSpeed != 0)
+	        	corrSpeed = Utilities.mph2mps(Utilities.kph2mph(correctNbackSpeed)); 
+	        else
+	        {	// So after new instructions it keeps following the speed it was driving at
+	        	if (nback_count < 2) 
+	        	{
+	        		corrSpeed = Utilities.mph2mps(Utilities.kph2mph(Integer.parseInt(currentLimit))); 
+	        		System.out.println("count < 2, corrspeed: " + corrSpeed);
+	        	} else {
+	        		corrSpeed = Utilities.mph2mps(Utilities.kph2mph(Integer.parseInt(prevCorSpeed))); 
+	        		System.out.println("count <> 2, corrspeed: " + corrSpeed);
+	        	}
+	        }
+	        String timing  = String.valueOf(simulation.env.time);
+	        pw.println(timing + "," + 3.6*real + "," + 3.6*rough + "," + 3.6*mental + "," + 3.6*corrSpeed + "," + (real-rough) + "," + (real-mental) + "," + (corrSpeed-real) + "," + freqSpeedoChecks + "," + currentNBack + "," + curBlock);
 	        pw.flush();
 	        pw.close();
-
+	        
 	    } catch (FileNotFoundException e) {
 	        System.out.println(e.getMessage());
 	    } catch (IOException e) {
@@ -432,7 +532,6 @@ public class Driving extends actr.task.Task
 	    }
 	}
 	
-		
 	boolean isCarStable (double na, double nva, double fva)
 	{
 		double f = 2.5;		// is this lane width? 
@@ -447,7 +546,20 @@ public class Driving extends actr.task.Task
 		double px = env.simcar.p.x + (env.simcar.h.x * d);
 		double pz = env.simcar.p.z + (env.simcar.h.z * d);
 		Coordinate im = env.world2image (new Position (px, pz));
-		try { return Math.atan2 (.5*(x-im.x), 450); }		// google
+		try { return Math.atan2 (.5*(x-im.x), 450); }		
+		//  counterclockwise angle to the POSITIVE (right side) X axis. Y value first
+		//  math.atan2(y,x) * 180 / Math.PI = normal degrees ie 2.2 = 45
+//				|	/<_
+//				|  /   \^
+//				| /	    \ 
+//				|/	     |^
+//		-------------------x	math.atan2(y, x)
+//				|
+//				|
+//				|
+//				y
+		
+		
 		catch (Exception e) { return 0; }
 	}
 
@@ -482,31 +594,48 @@ public class Driving extends actr.task.Task
 			// estimate the current speed based on how much distance was crossed since the last check
 		} else if (cmd.equals("set-rough-speed"))
 		{
+			// fix the near and far points swerving so much
+			
+			// only check rough speed every once in a while but do keep adding noise every time
 			Simcar simcar = simulation.env.simcar;
+			
+			Random r = new Random(); 
+			double noise = r.nextGaussian() * 0.1;		// 1 mps is 3.6 km/h		0.3 = 1.2 km/h
 			curTime = simulation.env.time; 						
 			curDist = simcar.getDistance();
 			
+			// difference mental - (rough + noise)			
 			double diffDist = curDist - prevDist; 
 			double dTime = curTime - prevTime;
-			if (dTime != 0)
-				roughSpeed = diffDist / dTime;  			
-			//System.out.println("dist: " + diffDist + " time: " + dTime); 
-			//System.out.println("roughSpeed: " + Utilities.mph2kph(Utilities.mps2mph(roughSpeed)) + " vs actual speed: " + simcar.speed);
+			if (diffDist != 0 && dTime != 0)
+				roughSpeed = diffDist / dTime + noise; 
+			else 
+				roughSpeed = noise; 
 			
-			Random r = new Random(); 
-			double noise = r.nextGaussian() * 0.1;		// 1 mps is 3.6 km/h
-			mentalSpeed = roughSpeed + noise; 
+			mentalSpeed = (mentalSpeed + roughSpeed)/2; 
 			
 			prevTime = curTime; 
 			prevDist = curDist; 
-			makeCSVwithSpeeds(simcar.speed, roughSpeed, mentalSpeed);
-			
-			//System.out.println("mentalSpeed: " + mentalSpeed + " vs actual speed: " + simcar.speed);			
+						
 		} else if (cmd.equals("set-speedo-speed"))
-		{
+		{					
+			// calculate frequency of speedo checks
+			if (currentNBack != "")
+				numSpeedoChecks++; 
+			double deltaTime = simulation.env.time - timeStartBlock;
+			freqSpeedoChecks = numSpeedoChecks / deltaTime; 
+			
+			// updates mentalspeed to speedo value
 			double speedoSpeed = Double.valueOf (it.next());
-			//System.out.println("speedospeed: " + Utilities.mph2mps(Utilities.kph2mph(speedoSpeed))); 
 			mentalSpeed = Utilities.mph2mps(Utilities.kph2mph(speedoSpeed)); 
+			
+		} else if (cmd.equals("saw-speed-sign"))
+		{	System.out.println("attended sign"); 
+			signSeen = true; 
+			
+		} else if (cmd.equals("saw-instructions"))
+		{	System.out.println("attended instructions"); 
+			instructionsSeen = true; 
 		}
 	}
 
@@ -521,7 +650,10 @@ public class Driving extends actr.task.Task
 			double fva = Double.valueOf (it.next());
 			boolean b = isCarStable(na,nva,fva);
 			return cmd.equals("is-car-stable") ? b : !b;
-		}
+		} else if (cmd.equals("didnt-see-sign"))
+			return !signSeen ? true : false;
+		else if (cmd.equals("didnt-see-instructions"))
+			return !instructionsSeen? true : false; 
 		else return false;
 	}
 
@@ -579,24 +711,22 @@ public class Driving extends actr.task.Task
 			// ADDED for timing 
 			else if (cmd.equals("eval-speed"))
 			{
+	
 				// 0 = early, 1 = safe, 2 = late
 				double speedometerSpeed = Double.valueOf (it.next());
 				double imaginedSpeed = Double.valueOf (it.next());
 				double diff = Math.abs(speedometerSpeed - imaginedSpeed); 
 				System.out.println("\tspeedo: " + speedometerSpeed + "(" + String.format("%.2f", Utilities.mph2mps(Utilities.kph2mph(speedometerSpeed))) + ") "+ " imagined: " + imaginedSpeed + "(" + String.format("%.2f", Utilities.mph2mps(Utilities.kph2mph(imaginedSpeed))) + ")"); 
 				
-				if (diff <= acceptableSpeedDiff)	// 2 atm
+				if (diff <= 2.5)	
 					return 0;	// early
-				else if (diff > acceptableSpeedDiff && diff <= 2*acceptableSpeedDiff) //4 kmh
+				else if (diff > 2.5 && diff <= 5) 
 					return 1; 	// safe
-				else if (diff > 2*acceptableSpeedDiff)
+				else if (diff > 5)
 					return 2;	// late 
 				else 
 					return 0; 
 				
-				// in paper stable 0.07 rad (1/4 lane) = 4.01 degrees
-				// https://www.calculator.net/right-triangle-calculator.html?av=&alphav=0.07&alphaunit=r&bv=10&betav=&betaunit=d&cv=&hv=&areav=&perimeterv=&x=0&y=0 
-	
 			// ADDED for range of similar experiences
 			} else if (cmd.equals("get-mintick"))
 			{
@@ -610,7 +740,7 @@ public class Driving extends actr.task.Task
 		}
 		catch (Exception e)
 		{
-			System.out.println("exception!\n"); 
+			System.out.println("exception!"); 
 			e.printStackTrace();
 			System.exit(1);
 			return 0;
@@ -635,21 +765,23 @@ public class Driving extends actr.task.Task
 		return null;
 	}
 	
-	String[] removeElement(String[] arr, int removeAt)
+	void shiftLeft()
 	{
-		String[] newArray = new String[arr.length-1]; 
-		String condi; 
-		for (int i = 0; i < removeAt; i++)
+		for (int i = 0; i<4; i++)
 		{
-			condi = arr[i]; 
-			newArray[i]= condi; 
+			speedSigns[i] = speedSigns[i+1]; 
 		}
-		for (int i = removeAt+1; i < arr.length; i++)
-		{
-			condi = arr[i];
-			newArray[i-1] = condi; 
-		}
-		return newArray; 
+		speedSigns[4] = 0; 	
+		
 	}
 
+	double[] copyByValue(double time)
+	{
+		double envTime[] = {time};
+
+		 double blockTime[] = new double[envTime.length]; 
+		 blockTime[0] = envTime[0]; 
+		
+		 return blockTime;
+	}
 }
