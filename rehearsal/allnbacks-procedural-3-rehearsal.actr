@@ -22,7 +22,7 @@
 )
 
 (add-dm
-    (goal1 isa drive phase free waitUntil 15)
+    (goal1 isa drive phase free waitUntil 20)
     (goal2 isa nback status start)    
 )
 (set-all-base-levels 10000)
@@ -447,16 +447,21 @@
     =visual-location>
         isa visual-location
         kind instructions
-        :attended nil    
+        :attended nil   
+    ?visual>
+        state free
+    =imaginal>
+        nbackspeed =slimit
     !eval! (didnt-see-instructions)
 ==>      
-    !eval! (saw-instructions)
+    !eval! (saw-instructions =slimit)
     =goal>
         isa nback
         status processInstructions
     +visual>
         isa move-attention
         screen-pos =visual-location
+    =imaginal>
 )
 
 (p interrupt-and-notice-instructions
@@ -471,15 +476,18 @@
         :attended nil    
     ?visual>
         state free
+    =imaginal>
+        nbackspeed =slimit
     !eval! (didnt-see-instructions)
 ==>      
-    !eval! (saw-instructions)
+    !eval! (saw-instructions =slimit)
     =goal>
         isa nback
         status processInstructions
     +visual>
         isa move-attention
         screen-pos =visual-location 
+    =imaginal>
 )
 
 (p process-instructions	;; and reset stuff
@@ -743,6 +751,21 @@
 )
 
 ;; no 4* because that follows the remember path
+
+(p nback-enough-rehearsal*
+    =goal>
+        isa nback
+        status notice
+        >= nr 3		;; number of rehearsals
+        > num 0
+        rehearsal t
+==>
+    !bind! =nr (get-num-rehearsal)
+    =goal>
+        status notice
+        rehearsal f
+    -retrieval>
+)
 
 ;----------------- REHEARSAL ---------------------------------------
 

@@ -22,7 +22,7 @@
 )
 
 (add-dm
-    (goal1 isa drive phase free attendstart n waitUntil 0)
+    (goal1 isa drive phase free attendstart n waitUntil 0 road x)
     (goal2 isa nback status start)    
 )
 (set-all-base-levels 10000)
@@ -96,7 +96,8 @@
     !bind! =dfa (- =fa =fa2)
     !bind! =dt (- =time =time2)
     !bind! =vna (my/ =dna =dt)
-    !bind! =vfa (my/ =dfa =dt)
+    !bind! =vfa (my/ =dfa =dt)        
+    !bind! =cond (get-road-condition)	;; 0 = norm, 1 = constr
         ;!bind! =v (get-velocity)
         ;!bind! =fthw (get-thw =fd =v)
         ;!bind! =dthw (- =fthw =fthw2)
@@ -113,6 +114,7 @@
         ;fthw =fthw
         ;v =v
         done t 
+        road =cond
     =imaginal>
     +visual>
         isa move-attention
@@ -258,28 +260,28 @@
     +retrieval>
         isa speedoexp	
         ;; retrieve good experience, not ticks
-        ; timing 1
+        ; safety 1
         ;;speed =speed
 )
 
 (spp speedo*start-check :u 5)	;; higher priority?
 
-; ---------------------------CAN'T RETRIEVE BC OF NBACK -----------------------
+; ---------------------------SPEEDO OVERWROTE-----------------------
 
-(p speedo*just-check
+(p speedo*try-to-retrieve-again
     =goal>
         isa drive
-        status trytoretrieve
-    =retrieval>
-        - isa speedoexp
-==> 
+        phase trytoretrieve
+    ?retrieval>
+        buffer empty
+        - state busy
+        ;; or - speedoexp
+==>
     =goal>
         isa drive
-        phase attend
-        needvisual y
-    +visual-location>
-        isa visual-location
-        kind speedometer
+        phase trytoretrieve    
+    +retrieval>
+        isa speedoexp	
 )
 
 ; ---------------------------RETRIEVAL FAILED -----------------------
@@ -312,7 +314,7 @@
     =retrieval>
         isa speedoexp
         ticks =something
-        timing 0
+        safety 0
 ==>
     !bind! =wait (+ =number 10)
     =goal>
@@ -329,7 +331,7 @@
     =retrieval>
         isa speedoexp
         ticks =something
-        timing 2
+        safety 2
 ==>
     !bind! =wait (get-mintick =something 10)
     =goal>
@@ -346,7 +348,7 @@
     =retrieval>
         isa speedoexp
         ticks =something
-        timing 1
+        safety 1
 ==>
     =goal>
         isa drive
@@ -438,6 +440,7 @@
         isa drive
         phase attend
         needvisual y       
+    =temporal>
 )
 
 ;; ------------------------------ATTEND---------------------------
@@ -504,7 +507,7 @@
     +imaginal>
         isa speedoexp
         ticks =something
-        timing =safe
+        safety =safe
         speed =speed
     -imaginal>
     +imaginal>
@@ -518,10 +521,6 @@
         ticks 0
     -retrieval>	;;; to remove the error hopefully
 )
-
-;-----------------------SIGN DURING CHECKING----------------------
-
-
 
 ;----------------- NBACK general----------------------------------------
 
@@ -558,36 +557,41 @@
         isa visual-location
         kind instructions
         :attended nil    
+    =imaginal>
+        nbackspeed =slimit
     !eval! (didnt-see-instructions)
 ==>      
-    !eval! (saw-instructions)
+    !eval! (saw-instructions =slimit)
     =goal>
         isa nback
         status processInstructions
     +visual>
         isa move-attention
         screen-pos =visual-location
+    =imaginal>
 )
 
 (p interrupt-and-notice-instructions
     =goal>
         isa nback
-        status notice  
     =visual-location>
         isa visual-location
         kind instructions
         :attended nil    
     ?visual>
         state free
+    =imaginal>
+        nbackspeed =slimit
     !eval! (didnt-see-instructions)
 ==>      
-    !eval! (saw-instructions)
+    !eval! (saw-instructions =slimit)
     =goal>
         isa nback
         status processInstructions
     +visual>
         isa move-attention
         screen-pos =visual-location 
+    =imaginal>
 )
 
 (p process-instructions	;; and reset stuff
@@ -749,7 +753,7 @@
     =goal>
         isa nback
         status notice
-        < nr 99		;; number of rehearsals
+        < nr 99	;; number of rehearsals
         > num 0
         rehearsal t
     =retrieval>
@@ -766,7 +770,7 @@
     =goal>
         isa nback
         status notice
-        < nr 3		;; number of rehearsals
+        < nr 99		;; number of rehearsals
         > num 0
         rehearsal t
     =imaginal>
@@ -875,7 +879,7 @@
     =goal>
         isa nback
         status notice
-        >= nr 3		;; number of rehearsals
+        >= nr 99		;; number of rehearsals
         > num 0
         rehearsal t
 ==>

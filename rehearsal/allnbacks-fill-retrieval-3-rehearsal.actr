@@ -10,10 +10,10 @@
     :emma t
     :v t
     ;---
-    :rt 0
+    :rt -0
     :ans 0.125
     :mp 11.5		;; partial matching?
-    :lf 0.58		;; 0.55  is crash .58 works
+    :lf 0.5
     ;---
     :trout t
     ;:act t
@@ -22,7 +22,7 @@
 )
 
 (add-dm
-    (goal1 isa drive phase free attendstart n waitUntil 0)
+    (goal1 isa drive phase free attendstart n waitUntil 0 road x)
     (goal2 isa nback status start)    
 )
 (set-all-base-levels 10000)
@@ -96,7 +96,8 @@
     !bind! =dfa (- =fa =fa2)
     !bind! =dt (- =time =time2)
     !bind! =vna (my/ =dna =dt)
-    !bind! =vfa (my/ =dfa =dt)
+    !bind! =vfa (my/ =dfa =dt)        
+    !bind! =cond (get-road-condition)	;; 0 = norm, 1 = constr
         ;!bind! =v (get-velocity)
         ;!bind! =fthw (get-thw =fd =v)
         ;!bind! =dthw (- =fthw =fthw2)
@@ -113,6 +114,7 @@
         ;fthw =fthw
         ;v =v
         done t 
+        road =cond
     =imaginal>
     +visual>
         isa move-attention
@@ -197,7 +199,7 @@
     !eval! (is-car-not-stable =na =vna =vfa)
 ==>
     =goal>
-        ;;  status speedo		;; start speedo loop y/n?
+        ;; status speedo
         na nil
         fa nil
         na2 =na
@@ -247,8 +249,8 @@
     =imaginal>
         isa nback-state
         nbackspeed =speed
-        ;?retrieval>		;; no remembering nback otherwise
-        ;   state free
+    ?retrieval>		;; no remembering nback otherwise
+        buffer empty
 ==>
     =goal>
         isa drive
@@ -257,7 +259,12 @@
     =imaginal>
     +retrieval>
         isa speedoexp	
+        ;; retrieve good experience, not ticks
+        ; safety 1
+        ;;speed =speed
 )
+
+(spp speedo*start-check :u 5)	;; higher priority?
 
 ; ---------------------------SPEEDO OVERWROTE-----------------------
 
@@ -353,23 +360,21 @@
 ; ---------------------------GET VISUALS-----------------------
 
     ;(p speedo*get-visual-location-again-wrong-kind
-    ; =goal>
-    ; isa drive
+    ;=goal>
+    ;isa drive
     ;phase attend
-    ; needvisual y
-    ; =visual-location> 
+    ;needvisual y
+    ;=visual-location> 
     ;- kind speedometer
-    ; ?visual-location>
     ;state free
-    ;- buffer requested
-    ;- buffer unrequested
-    ; ?visual>
-    ; buffer empty
-    ; state free
-    ;  ==>
+    ;?visual>
+    ;buffer empty
+    ;?retrieval>		;; no remembering nback otherwise
+    ;state free
+    ;buffer empty
+    ;==>
     ;=goal>
     ;isa drive 
-    ;phase attend
     ;needvisual y
     ;+visual-location>
     ;isa visual-location 
@@ -383,13 +388,11 @@
         needvisual y
     ?visual-location> 
         buffer empty
-        state free
     ?visual>
         buffer empty
+    ?retrieval>		;; no remembering nback otherwise
         state free
-        ; ?retrieval>		;; no remembering nback otherwise
-        ;state free
-        ;buffer empty
+        buffer empty
 ==>
     =goal>
         isa drive 
@@ -409,9 +412,9 @@
         kind speedometer
     ?visual>
         state free
-        ;  ?retrieval>		;; no remembering nback otherwise
-        ;    state free
-        ;  buffer empty
+    ?retrieval>		;; no remembering nback otherwise
+        state free
+        buffer empty
 ==>
     =goal>
         isa drive
@@ -437,6 +440,7 @@
         isa drive
         phase attend
         needvisual y       
+    =temporal>
 )
 
 ;; ------------------------------ATTEND---------------------------
@@ -467,7 +471,7 @@
     +temporal>
         isa time
         ticks 0        
-    -retrieval>
+    -retrieval>	;;; to remove the error hopefully
 )
 
 (p speedo*attend
@@ -515,9 +519,8 @@
     +temporal>
         isa time
         ticks 0
-    -retrieval>
+    -retrieval>	;;; to remove the error hopefully
 )
-
 
 ;----------------- NBACK general----------------------------------------
 
@@ -534,8 +537,6 @@
         num 0
         nr 0
         rehearsal f
-        ;ntask 2		;for testing without instructions
-        ;needsigns 3		;; ^^
     +imaginal>
         isa nback-state
         nbackspeed 60
@@ -560,7 +561,7 @@
         nbackspeed =slimit
     !eval! (didnt-see-instructions)
 ==>      
-    !eval! (saw-instructions =slimit) 
+    !eval! (saw-instructions =slimit)
     =goal>
         isa nback
         status processInstructions
@@ -573,9 +574,6 @@
 (p interrupt-and-notice-instructions
     =goal>
         isa nback
-        - status notice  
-        - status read-nback
-        - status processInstructions
     =visual-location>
         isa visual-location
         kind instructions
@@ -586,7 +584,7 @@
         nbackspeed =slimit
     !eval! (didnt-see-instructions)
 ==>      
-    !eval! (saw-instructions =slimit) 
+    !eval! (saw-instructions =slimit)
     =goal>
         isa nback
         status processInstructions
@@ -615,6 +613,7 @@
         ntask =nback
         needsigns =signs
 )
+
 
 ;; --------------------- SPEED SIGN----------------------------
 
@@ -669,6 +668,7 @@
         isa nback-state
         1back =cid 
         nbackspeed =tlimit ;perform 0-back continuously
+        slimit =tlimit
 )
 
 (p nback-memorise-sign*
@@ -705,7 +705,9 @@
     +imaginal>
         isa nback-state
         1back =cid 
-        nbackspeed =tlimit ;perform 0-back until enough signs have been passed
+        nbackspeed =tlimit 
+        slimit =tlimit ;perform 0-back until enough signs have been passed
+    -retrieval>
 )
 
 (p nback-memorise-sign ;; for nbacks > 0
@@ -747,16 +749,39 @@
 
 ;----------------- REHEARSAL* ---------------------------------------
 
+(p nback-briefly-stop-rehearsal
+    =goal>
+        isa nback
+        status notice
+        < nr 3		;; number of rehearsals
+        > num 0
+        rehearsal t
+    =retrieval>
+        isa nback-state
+==>
+    =goal>
+        status notice
+    -retrieval>
+)
+
+;------------------------------------------------------------------------
+
 (p nback-start-rehearsal
     =goal>
         isa nback
         status notice
-        < nr 1		;; number of rehearsals
+        < nr 3		;; number of rehearsals
         > num 0
         rehearsal t
     =imaginal>
         isa nback-state
         1back =1back
+    ?visual-location>
+        buffer empty
+    ?visual>
+        buffer empty
+    ?retrieval>
+        buffer empty	;; so it doesn't interrupt speedo checking
 ==>
     !bind! =nr (get-num-rehearsal)
     =goal>
@@ -854,7 +879,7 @@
     =goal>
         isa nback
         status notice
-        >= nr 1		;; number of rehearsals
+        >= nr 3		;; number of rehearsals
         > num 0
         rehearsal t
 ==>
@@ -884,8 +909,6 @@
 ==>
     =goal>
         status rehearse1
-        stat rehearse1
-        prevchunk =1back   
     +retrieval>
         isa nback-state
         id =1back    
@@ -905,7 +928,6 @@
 ==>
     =goal>
         status notice
-    =retrieval>
     -retrieval>
 )
 
@@ -915,8 +937,6 @@
         status rehearse1
         > ntask 1
         > num 2
-        stat rehearse2
-        prevchunk =1back
     =retrieval>
         isa nback-state
         1back =1back
@@ -926,8 +946,6 @@
 ==>
     =goal>
         status rehearse2
-        stat rehearse2
-        prevchunk =1back
     +retrieval>
         isa nback-state
         id =1back
@@ -947,7 +965,6 @@
 ==>
     =goal>
         status notice
-    =retrieval>
     -retrieval>
 )
 
@@ -966,8 +983,6 @@
 ==>
     =goal>
         status rehearse3
-        stat rehearse3
-        prevchunk =1back
     +retrieval>
         isa nback-state
         id =1back
@@ -976,7 +991,7 @@
 (p nback-rehearse-sign-2back-and-stop
     =goal>
         isa nback
-        status rehearse3
+        status rehearse2
         ntask 2
     =retrieval>
         isa nback-state
@@ -987,9 +1002,7 @@
 ==>
     =goal>
         status notice
-    +retrieval>
-        isa nback-state
-        id =1back
+    -retrieval>
 )
 
 (p nback-rehearse-sign-3back
@@ -1007,8 +1020,6 @@
 ==>
     =goal>
         status rehearse4
-        stat rehearse4
-        prevchunk =1back
     +retrieval>
         isa nback-state
         id =1back
@@ -1028,9 +1039,7 @@
 ==>
     =goal>
         status notice
-    +retrieval>
-        isa nback-state
-        id =1back
+    -retrieval>
 )
 
 (p nback-rehearse-sign-4back
@@ -1048,8 +1057,8 @@
 ==>
     =goal>
         status notice
-    =retrieval>
     -retrieval>
+        ;-retrieval>
 )
 
 ;;----------------------REMEMBER------------------------------------------
@@ -1065,8 +1074,6 @@
 ==>
     =goal>
         status remember2
-        stat remember2
-        prevchunk =1back
     +retrieval>
         isa nback-state
         id =1back
@@ -1104,8 +1111,6 @@
 ==>
     =goal>
         status remember3
-        stat remember3
-        prevchunk =1back
     +retrieval>
         isa nback-state
         id =1back
@@ -1143,8 +1148,6 @@
 ==>
     =goal>
         status remember4
-        stat remember4
-        prevchunk =1back
     +retrieval>
         isa nback-state
         id =1back

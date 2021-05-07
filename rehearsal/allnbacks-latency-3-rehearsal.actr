@@ -257,63 +257,24 @@
     =imaginal>
     +retrieval>
         isa speedoexp	
-        ;; retrieve good experience, not ticks
-        ; timing 1
-        ;;speed =speed
 )
 
-; ---------------------------CAN'T RETRIEVE BC OF NBACK -----------------------
+; ---------------------------SPEEDO OVERWROTE-----------------------
 
-(p speedo*just-check-wrong-chunk
-    =goal>
-        isa drive
-        phase trytoretrieve
-    =retrieval>
-        - isa speedoexp
-==> 
-    =goal>
-        isa drive
-        phase attend
-        needvisual y
-    +visual-location>
-        isa visual-location
-        kind speedometer
-)
-
-(p speedo*just-check-no-chunk
+(p speedo*try-to-retrieve-again
     =goal>
         isa drive
         phase trytoretrieve
     ?retrieval>
         buffer empty
-        state free
-==> 
+        - state busy
+        ;; or - speedoexp
+==>
     =goal>
         isa drive
-        phase attend
-        needvisual y
-    +visual-location>
-        isa visual-location
-        kind speedometer
-)
-
-(p speedo*just-check-no-ticks
-    =goal>
-        isa drive
-        phase trytoretrieve
-    ?retrieval>
-        buffer empty
-        state free
-    ?temporal>
-        state free
-==> 
-    =goal>
-        isa drive
-        phase attend
-        needvisual y
-    +visual-location>
-        isa visual-location
-        kind speedometer
+        phase trytoretrieve    
+    +retrieval>
+        isa speedoexp	
 )
 
 ; ---------------------------RETRIEVAL FAILED -----------------------
@@ -346,7 +307,7 @@
     =retrieval>
         isa speedoexp
         ticks =something
-        timing 0
+        safety 0
 ==>
     !bind! =wait (+ =number 10)
     =goal>
@@ -363,7 +324,7 @@
     =retrieval>
         isa speedoexp
         ticks =something
-        timing 2
+        safety 2
 ==>
     !bind! =wait (get-mintick =something 10)
     =goal>
@@ -380,31 +341,13 @@
     =retrieval>
         isa speedoexp
         ticks =something
-        timing 1
+        safety 1
 ==>
     =goal>
         isa drive
         phase checkwait
         waitUntil =something
         needvisual n
-)
-
-;------------------------------
-
-(p speedo*waited-long-enough 
-    =goal>
-        isa drive
-        phase checkwait
-        waitUntil =wait
-        needvisual n
-    =temporal>
-        ticks =something
-        >= ticks =wait
-==>
-    =goal>
-        isa drive
-        phase attend
-        needvisual y       
 )
 
 ; ---------------------------GET VISUALS-----------------------
@@ -478,6 +421,24 @@
         screen-pos =visual-location
 )
 
+;------------------------------
+
+(p speedo*waited-long-enough 
+    =goal>
+        isa drive
+        phase checkwait
+        waitUntil =wait
+        needvisual n
+    =temporal>
+        ticks =something
+        >= ticks =wait
+==>
+    =goal>
+        isa drive
+        phase attend
+        needvisual y       
+)
+
 ;; ------------------------------ATTEND---------------------------
 
 (p speedo*attend-first-time
@@ -542,7 +503,7 @@
     +imaginal>
         isa speedoexp
         ticks =something
-        timing =safe
+        safety =safe
         speed =speed
     -imaginal>
     +imaginal>
@@ -595,15 +556,18 @@
         isa visual-location
         kind instructions
         :attended nil    
+    =imaginal>
+        nbackspeed =slimit
     !eval! (didnt-see-instructions)
 ==>      
-    !eval! (saw-instructions)
+    !eval! (saw-instructions =slimit) 
     =goal>
         isa nback
         status processInstructions
     +visual>
         isa move-attention
         screen-pos =visual-location
+    =imaginal>
 )
 
 (p interrupt-and-notice-instructions
@@ -618,15 +582,18 @@
         :attended nil    
     ?visual>
         state free
+    =imaginal>
+        nbackspeed =slimit
     !eval! (didnt-see-instructions)
 ==>      
-    !eval! (saw-instructions)
+    !eval! (saw-instructions =slimit) 
     =goal>
         isa nback
         status processInstructions
     +visual>
         isa move-attention
         screen-pos =visual-location 
+    =imaginal>
 )
 
 (p process-instructions	;; and reset stuff
