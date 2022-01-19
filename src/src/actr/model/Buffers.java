@@ -131,6 +131,7 @@ public class Buffers
 	{
 		if (buffer == Symbol.goal) goals.remove (buffers.get(buffer));
 		else if (buffer == Symbol.temporal) model.removeEvents ("temporal");
+		else if (buffer == Symbol.temporal2) model.removeEvents ("temporal2");
 		else if (buffer == Symbol.retrieval) model.removeEvents ("declarative");
 		else if (buffer == Symbol.visual) model.removeEvents ("vision");
 		else if (buffer == Symbol.aural) model.removeEvents ("audio");

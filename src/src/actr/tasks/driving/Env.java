@@ -104,4 +104,9 @@ public class Env
 		}
 		else return null;
 	}
+	
+	public void setCurBlockRoadEnv(String value)
+	{
+		road.setCurBlockRoad(value);
+	}
 }

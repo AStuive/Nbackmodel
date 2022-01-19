@@ -6,7 +6,6 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
-import java.util.Random;
 
 import actr.model.Model;			//
 
@@ -26,6 +25,9 @@ public class Simcar extends Vehicle
 	Position nearPoint;
 	Position farPoint;
 	Position carPoint;
+	int lane;
+	double dist_to_nearest_lane;
+	double diffDist;
 	double distanceDriven; 
 	double prevTime = 0;
 	double curTime; 
@@ -45,6 +47,7 @@ public class Simcar extends Vehicle
 		brake = 0;
 		speed = 0;
 		distanceDriven = 0; 
+		lane = 2;
 		this.env = env; 
 	}
 
@@ -233,6 +236,11 @@ public class Simcar extends Vehicle
 		fracIndex = newi + fracdelta;
 		roadIndex = newi;
 		addDistance(env); 
+		
+		double distLeft = env.simcar.p.z - env.road.left(env.simcar.fracIndex, lane).z;
+		double distRight = env.simcar.p.z - env.road.right(env.simcar.fracIndex, lane).z;
+		dist_to_nearest_lane = Utilities.absoluteMin(distLeft, distRight);
+		diffDist = Math.abs(distLeft) - Math.abs(distRight); //positive -> should drive to the right
 	}
 
 	void update (Env env)

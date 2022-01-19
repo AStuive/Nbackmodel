@@ -94,8 +94,15 @@ public class Symbol
 	/** Pervasive symbol for the string <tt>"temporal"</tt>. */
 	public static final Symbol temporal = Symbol.createPervasiveSymbol ("temporal");
 
+	/** Pervasive symbol for the string <tt>"temporal2"</tt>. */
+	public static final Symbol temporal2 = Symbol.createPervasiveSymbol ("temporal2");
+	
 	/** Pervasive symbol for the string <tt>"?temporal"</tt>. */
 	public static final Symbol temporalState = Symbol.createPervasiveSymbol ("?temporal");
+	
+	/** Pervasive symbol for the string <tt>"?temporal2"</tt>. */
+	public static final Symbol temporal2State = Symbol.createPervasiveSymbol ("?temporal2");
+	
 	
 	/** Pervasive symbol for the string <tt>"buffer"</tt>. */
 	public static final Symbol buffer = Symbol.createPervasiveSymbol ("buffer");

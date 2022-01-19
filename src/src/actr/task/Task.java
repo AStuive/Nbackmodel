@@ -40,6 +40,7 @@ public class Task extends JPanel
 	private boolean showAttention, showEye;
 	private int attentionX, attentionY;
 	private int eyeX, eyeY;
+	public String taskCurrentFile = ""; 
 
 	/**
 	 * Constructs a new task.
@@ -59,6 +60,24 @@ public class Task extends JPanel
 		showEye = false;
 		attentionX = attentionY = 0;
 	}
+	
+//	public Task (String name)
+//	{
+//		super ();
+//
+//		setLayout (null);
+//		setBackground (Color.white);
+//
+//		this.name = "Task";
+//
+//		showMouse = false;
+//		mouseX = mouseY = 0;
+//		showAttention = false;
+//		showEye = false;
+//		attentionX = attentionY = 0;
+//		taskCurrentFile = name; 
+//		System.out.println("task: " + taskCurrentFile); 
+//	}
 
 	/**
 	 * Creates an instance of the given task named by its name string. The task name should be the

@@ -17,7 +17,7 @@ class Parser
 
 	public static final String[] defaultBuffers =  {
 		"goal", "retrieval", "visual-location", "visual",
-		"aural-location", "aural", "manual", "vocal", "imaginal", "temporal"
+		"aural-location", "aural", "manual", "vocal", "imaginal", "temporal", "temporal2"
 	};
 
 	Parser (String s)

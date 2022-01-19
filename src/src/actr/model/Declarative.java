@@ -283,6 +283,12 @@ public class Declarative extends Module
 			if (finsts.elementAt(i).getName() == name) return true;
 		return false;
 	}
+	
+//	Double c1 = Double.valueOf(chunk1.getString()); 
+//	System.out.println("1 " + c1); 
+//	Double c2 = Double.valueOf(chunk2.getString());
+//	System.out.println("2 " + c2); 
+//	d = -.1 * (Math.abs(c1-c2)); 
 
 	/**
 	 * Gets the similarity of two chunks.
@@ -290,15 +296,31 @@ public class Declarative extends Module
 	 * @param chunk2 the second chunk
 	 * @return the similarity of the chunks, or -1.0 if none has been specified
 	 */
-	public double getSimilarity (Symbol chunk1, Symbol chunk2)
-	{
-		if (chunk1==chunk2) return 0;
-		Double d = similarities.get (chunk1.getString()+"$"+chunk2.getString());
-		if (d==null) d = similarities.get (chunk2.getString()+"$"+chunk1.getString());
-		if (d==null) return -1.0;
-		else return d.doubleValue();
+	// chunk1 = from the request, chunk2 from DM
+	public double getSimilarity(Symbol chunk1, Symbol chunk2) {
+		//System.out.println("testing: " + chunk1.getString() + " vs " + chunk2.getString());
+		if (chunk1 == chunk2)
+			return 0;
+		Double d = similarities.get(chunk1.getString() + "$" + chunk2.getString());
+		if (d == null)
+			d = similarities.get(chunk2.getString() + "$" + chunk1.getString());
+		if (d == null)
+			return -1.0;
+		else
+			return d.doubleValue();
 	}
 
+	// Computes the similarity using a formula
+	public double getSimilarityTime(Symbol x, Symbol y)
+	{
+		double c1 = Double.valueOf(x.getString());
+		double c2 = Double.valueOf(y.getString());
+		double d = -0.1 * Math.abs(c1-c2); 
+		//double d = -1 * Math.pow(c1-c2, 2); 
+		System.out.println("testing timing " + c1 + " vs " + c2 + " d: " + d);  
+		return d; //(d < -1 ? -1 : d); 
+	}
+	
 	void setSimilarity (Symbol chunk1, Symbol chunk2, double value)
 	{
 		similarities.put (chunk1.getString()+"$"+chunk2.getString(), new Double(value));
@@ -329,5 +351,17 @@ public class Declarative extends Module
 		Iterator<Chunk> it = chunks.values().iterator();
 		while (it.hasNext()) s += it.next() + "\n";
 		return s;
+	}
+	
+	public double getRetrievalThreshold() {
+		return retrievalThreshold; 
+	}
+	
+	public double getMismatchPenalty() {
+		return mismatchPenalty; 
+	}
+	
+	public double getLatencyFactor() {
+		return latencyFactor; 
 	}
 }

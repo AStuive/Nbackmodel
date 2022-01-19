@@ -131,8 +131,10 @@ class BufferCondition
 			SlotCondition slotCondition = slotConditions.elementAt(i);
 			if (model.getProcedural().whyNotTrace)
 			{
-				int savedSize = inst.size();
+				int savedSize = inst.size();			
+
 				boolean result = slotCondition.test (buffer, bufferChunk, inst);
+ 
 				if (model.getProcedural().whyNotTrace)
 				{
 					if (result && inst.size()>savedSize) model.output (slotCondition.toString(inst,null));
@@ -145,11 +147,13 @@ class BufferCondition
 				if (!slotCondition.test (buffer, bufferChunk, inst)) return false;
 			}
 		}
+
 		if (buffer == Symbol.goal)
 		{
 			Chunk goal = model.getBuffers().get (Symbol.goal);
 			if (goal != null) inst.setThreadID (goal.getThreadID());
 		}
+  
 		return true;
 	}
 

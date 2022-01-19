@@ -72,7 +72,7 @@ class SlotCondition
 			else if (operator.equals(">")) return (bufferNumber > testNumber);
 			else if (operator.equals("<=")) return (bufferNumber <= testNumber);
 			else if (operator.equals(">=")) return (bufferNumber >= testNumber);
-		}
+		} 
 		return false;
 	}
 

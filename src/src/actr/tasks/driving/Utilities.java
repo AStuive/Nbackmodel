@@ -79,4 +79,9 @@ public class Utilities
 		device.setFullScreenWindow (frame);
 		frame.validate ();
 	}
+	
+	static double absoluteMin(double x, double y) {
+
+		return (Math.min(Math.abs(x), Math.abs(y)) == Math.abs(x)) ? x : y;
+	}
 }

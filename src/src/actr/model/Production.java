@@ -312,6 +312,7 @@ public class Production
 			if (bc.getPrefix()=='='
 				&& bc.getBuffer()!=Symbol.goal
 				&& bc.getBuffer()!=Symbol.temporal
+				&& bc.getBuffer()!=Symbol.temporal2
 				//&& bc.getBuffer()!=Symbol.imaginal
 				)
 			{

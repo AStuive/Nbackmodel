@@ -23,6 +23,7 @@ public class Model
 	private Speech speech;
 	private Imaginal imaginal;
 	private Temporal temporal;
+	private Temporal2 temporal2;
 	private Bold bold;
 	private Buffers buffers;
 	private Events events;
@@ -41,7 +42,8 @@ public class Model
 	boolean bufferStuffing = true;
 	boolean boldOut = false; //mlh
 	boolean traceOut = false; //mlh
-
+	static String modelCurrentFile = ""; 
+	
 	//output = new Vector<Sample> (); //mlh
 	List<String> output = new ArrayList<String>();	
 
@@ -56,6 +58,7 @@ public class Model
 		speech = new Speech (this);
 		imaginal = new Imaginal (this);
 		temporal = new Temporal (this);
+		temporal2 = new Temporal2 (this); 
 		bold = new Bold (this);
 		buffers = new Buffers (this);
 		events = new Events();
@@ -83,7 +86,7 @@ public class Model
 		new Parser(text).parse (model, taskOverride);
 		return model;
 	}
-
+	
 	/**
 	 * Compiles a model from a string. The enclosing frame is also needed to provide a way to print
 	 * output to the screen.
@@ -172,6 +175,12 @@ public class Model
 	 */
 	public Temporal getTemporal () { return temporal; }
 
+	/**
+	 * Gets the temporal2 module.
+	 * @return the temporal2 module
+	 */
+	public Temporal2 getTemporal2 () { return temporal2; }
+		
 	/**
 	 * Gets the BOLD module.
 	 * @return the BOLD module
@@ -266,7 +275,8 @@ public class Model
 		buffers.set (Symbol.vocalState, createBufferStateChunk ("vocal-state",false));
 		buffers.set (Symbol.imaginalState, createBufferStateChunk ("imaginal-state",true));
 		buffers.set (Symbol.temporalState, createBufferStateChunk ("temporal-state",true));
-
+		buffers.set (Symbol.temporal2State, createBufferStateChunk ("temporal2-state",true));
+		
 		buffers.setSlot (Symbol.manualState, Symbol.where, Symbol.keyboard);
 	}
 
@@ -277,6 +287,7 @@ public class Model
 		motor.update();
 		speech.update();
 		temporal.update();
+		temporal2.update(); 
 		declarative.update();
 		imaginal.update();
 		procedural.update();
@@ -670,12 +681,11 @@ public class Model
 		return s;
 	}
 
-	//make directory universal
 	public static void print(List<String> output, String filename)
 	{
 		String nbackLevel = Main.core.getFilename();
 		nbackLevel = nbackLevel.replace(".actr", "");
-		String directoryName = System.getProperty("user.dir") + "\\Output";
+		String directoryName = System.getProperty("user.dir") + "\\Traces";
 		String fileName = directoryName + "\\";
 
 		File directory = new File(directoryName);

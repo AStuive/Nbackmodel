@@ -290,10 +290,27 @@ public class Chunk
 		Iterator<Symbol> it = request.slots.keySet().iterator();
 		while (it.hasNext())
 		{
+			boolean nbackstate = false; 
 			Symbol slot = it.next();
-			if (slot == Symbol.isa) continue;
+			if (slot == Symbol.isa) 
+				{	
+					if (request.get (slot).getString() == "nback-state")
+						nbackstate =  true; 
+					continue;
+				}
 			Symbol value = request.get (slot);
-			sum += model.getDeclarative().getSimilarity (value, get(slot));
+			//System.out.println("slot: " + get(slot)); 
+			
+			Declarative decl = model.getDeclarative(); 
+			
+			// Separate function to compute the difference without set similarities
+			if (slot.getString().contains("timing") && get(slot) != Symbol.nil) // == "timing")
+			{	// if (nbackstate) gST, else gS
+//				Symbol x = get(slot); 
+//				if (x != Symbol.nil) 
+					sum += decl.getSimilarityTime (value, get(slot));
+			} else	
+				sum += decl.getSimilarity (value, get(slot));	// comparing chunks in DM?	
 		}
 		return model.getDeclarative().mismatchPenalty * sum;
 	}
@@ -361,5 +378,13 @@ public class Chunk
 			s += " " + slot + " " + value;
 		}
 		return s + ")"; // + " [bl="+getBaseLevel()+"] [fan=" + fan + "]";
+	}
+	
+	public String getISA() {
+		String s = ""; 
+		Symbol isa = get (Symbol.isa);
+		if (isa!=null && isa!=Symbol.nil) 
+			s += isa;
+		return s;
 	}
 }

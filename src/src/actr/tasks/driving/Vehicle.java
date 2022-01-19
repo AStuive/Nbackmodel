@@ -19,4 +19,9 @@ public class Vehicle
 		fracIndex = 0;
 		speed = 0;
 	}
+	
+	void printFracIndex()
+	{
+		System.out.println("fracindex: " + fracIndex); 
+	}
 }

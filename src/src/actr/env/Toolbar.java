@@ -50,9 +50,11 @@ class Toolbar extends JToolBar
 
 		addSeparator();
 
+		// Increase run speed here
 		JButton runButton = addButton (actions.runAction, 20);
 		final String[][] speedOptions = {{"5x Slower","0.2"}, {"3x Slower","0.33"}, {"Real-Time","1"},
-				{"3x Faster","3"}, {"5x Faster","5"}, {"10x Faster","10"}};
+				{"3x Faster","3"}, {"5x Faster","5"}, {"10x Faster","10"}, {"20x Faster", "20"}, 
+				{"50x Faster", "50"}, {"100x Faster", "100"}};
 		addDropButton ("Run Speed", runButton, speedOptions, 2, new Setter() {
 			public void set (String s) { speedup = s; }
 		});

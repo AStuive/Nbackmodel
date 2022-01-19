@@ -49,7 +49,7 @@ public class Temporal extends Module
 
 	void queueTickIncrement ()
 	{
-		model.addEvent (new Event (model.getTime() + tick, "temporal", "increment ticks [" + (ticks+1) + "]") {
+		model.addEvent (new Event (model.getTime() + tick, "temporal1", "increment ticks [" + (ticks+1) + "]") {
 			public void action()
 			{
 				ticks ++;

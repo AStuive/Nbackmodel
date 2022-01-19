@@ -16,7 +16,10 @@ public class Road extends Driving
 {
 	static Vector<Segment> segments = null;
 	int lanes = 3;
-	
+	String curBlockRoad = "normal"; 	
+	static int fracsRemoved = 0; 
+	// because new segments are created every block, the overall driven distance will get much higher
+	// than the number of segments currently present. 
 	public Road ()
 	{
 	}
@@ -107,6 +110,7 @@ public class Road extends Driving
 
 	void startup ()
 	{
+		
 		boolean curved = Env.scenario.curvedRoad;
 		segments = new Vector<Segment> ();
 
@@ -119,9 +123,29 @@ public class Road extends Driving
 		boolean curving = false;
 		double da = 0;
 		double dascale = .02;
-		double d = lanes*3.66/2.0;
-
-		for (int i=1 ; i<=40000 ; i++)
+		double d; 
+		if (curBlockRoad == "normal") {
+			d = lanes*3.5/2.0;			// 3.66 width normal road lane US?
+			//System.out.println("startup, normal road, width: " + d);
+		} else {
+			d = lanes*2.5/2.0; 
+			//System.out.println("startup, construction road, width: " + d);
+		}
+				 
+		// normal condition: total 10.75, 3.5, 3.5, 3.75
+		// construction condition: total 6 (8.25), (2.5), 2.5, 3.5
+		
+		
+//		in roads
+//		lane respresents the lanes from right to left (right = 1, middle 2, left = 3
+//		the middle of each is +0.5??
+//
+//		seglength 200
+//		140 km/h = 38.88 m/s
+//		200/38.88 = 5.14 s per segment
+//		dus 360 seconden = 70 segments
+		
+		for (int i=1 ; i<=200000 ; i++)			// used to be 40000
 		{
 			if (segcount >= seglen)
 			{
@@ -133,18 +157,28 @@ public class Road extends Driving
 					if (curving) da = ((da > 0) ? -1 : +1) * dascale * 17; // (i % 17);
 				}
 			}
+			
+			//segments[fracIndex] is the current segment 
 			if (curving) 
 				h = h.rotate (da);
 			p = p.add (h);
+			
 			Segment s = new Segment (p.x + d*h.z, p.z - d*h.x, p.x, p.z, p.x - d*h.z, p.z + d*h.x);
 			segments.addElement (s);
 			segcount++;
+			 
+//			Segment (double a1, double a2, double a3, double a4, double a5, double a6)
+//			{
+//				left = new Position (a1, a2);
+//				middle = new Position (a3, a4);		// position = visual world, coordinate = screen	
+//				right = new Position (a5, a6);
+
 		}
 	}
-
+	
 	static Segment getSegment (int i)
 	{
-		return (Segment) (segments.elementAt (i));
+		return (Segment) (segments.elementAt(i));
 	}
 
 	static Position location (double fracIndex, double lanePos)
@@ -365,45 +399,46 @@ public class Road extends Driving
 		p.addPoint (newLoc.x, newLoc.y);
 		newLoc = env.world2image (location (ri+distAhead, lanes+1));
 		p.addPoint (newLoc.x, newLoc.y);
+		//System.out.println("ri+3: " + (ri+3) + " lanes+1: " + (lanes + 1)); 
 		newLoc = env.world2image (location (ri+3, lanes+1));
 		p.addPoint (newLoc.x, newLoc.y);
 		g.fillPolygon (p);
 
 		long di = 3;
-		int[] lpsN = {1,2,3,4,4};		
+		int[] lpsN = {1,2,3,4};		
 		// normal road = l & mid 3.5m, r 3.75m	construction mid 2.5m r 3.5m
 		// the middle is 71.4% of normal width		right is 100% of MIDDLE width
 		// middle is 2.286
-		double[] lpsC = {1,2,2.286,3,4};
+		//double[] lpsC = {1,2,2.286,3,4};
 		Coordinate[] oldLocs;
 		oldLocs = new Coordinate[]{null, null, null, null, null};
 		while (di <= distAhead)
 		{
 			g.setColor (Color.white);
-			for (int i=0 ; i<=4 ; i++) //changed to 3 and also at the if statement -mh
+			for (int i=0 ; i<=3 ; i++) //changed to 3 and also at the if statement -mh
 			{	
 				double lp = 0; 
-				if (curBlock == "normal")
-				{
+//				if (curBlockRoad == "normal")
+//				{
 					lp = lpsN[i];
 					newLoc = env.world2image (location (ri+di, lp));
-				} else 
-				{
-					lp = lpsC[i];
-					newLoc = env.world2image (location (ri+di, lp));
-				}
+//				} else 
+//				{
+//					lp = lpsC[i];
+//					newLoc = env.world2image (location (ri+di, lp));
+//				}
 				Coordinate oldLoc = oldLocs[i];
 				
-				if (curBlock == "construction")
+				if (curBlockRoad == "construction")
 				{
-					if (oldLoc!=null && newLoc!=null && (lp != 2 || ((ri+di) % 5 < 2)))
+					if (oldLoc!=null && newLoc!=null)
 					{
-						if (lp != 1 && lp != 2)
+						if (lp != 1)
 							g.setColor (Color.yellow); 
 						g.drawLine (oldLoc.x, oldLoc.y, newLoc.x, newLoc.y);	
 					} 
 					
-				} else if (curBlock == "normal") 
+				} else if (curBlockRoad == "normal") 
 				{ 
 					if (oldLoc!=null && newLoc!=null && (lp==1 || lp==4 || ((ri+di) % 5 < 2)))
 					{
@@ -472,6 +507,11 @@ public class Road extends Driving
 			g.setColor(Color.red);
 			g.drawString("Please keep to the speed limit!", 200, 100);
 		}
+	}
+	
+	public void setCurBlockRoad(String value)
+	{
+		curBlockRoad = value; 
 	}
 
 }
